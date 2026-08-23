@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15 Rajputana Rifles — Battalion Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --green-950:#0e1f14;
+  --green-900:#14301e;
+  --green-800:#1b3d27;
+  --green-700:#26512f;
+  --gold:#c99a3f;
+  --gold-light:#e4bf6a;
+  --bg:#f3f4f2;
+  --surface:#ffffff;
+  --surface-2:#f7f8f6;
+  --border:#e2e5e0;
+  --text:#1c231d;
+  --text-dim:#5c6659;
+  --text-faint:#8a9184;
+  --red:#c65b4e;
+  --blue:#3a6ea5;
+  --orange:#d68a3c;
+  --purple:#7c5ea3;
+  --teal:#3f8f7f;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(20,30,20,.06), 0 1px 12px rgba(20,30,20,.04);
+}
+[data-theme="dark"]{
+  --bg:#0b120c;
+  --surface:#121b13;
+  --surface-2:#0f180f;
+  --border:#213022;
+  --text:#e7ede6;
+  --text-dim:#9fae9a;
+  --text-faint:#6f7d6a;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 1px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:background .2s, color .2s;
+}
+::selection{background:var(--gold); color:var(--green-950);}
+
+/* ===== Top Bar ===== */
+.topbar{
+  height:64px;
+  background:linear-gradient(135deg, var(--green-950), var(--green-800));
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px;
+  position:sticky; top:0; z-index:40;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
+}
+.topbar-left{display:flex; align-items:center; gap:14px;}
+.crest{
+  width:38px; height:38px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 60%, #8a6a25);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; color:#2b1e05; font-size:13px; flex-shrink:0;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);
+}
+.brand-name{color:#f4f1ea; font-weight:700; font-size:16px; letter-spacing:.3px; line-height:1.1;}
+.brand-tag{color:var(--gold-light); font-size:11px; letter-spacing:1.5px; font-weight:600;}
+.menu-toggle{
+  display:none; background:none; border:none; color:#f4f1ea; font-size:20px; cursor:pointer;
+}
+.topbar-right{display:flex; align-items:center; gap:18px; color:#eef1ea;}
+.tb-clock{font-size:13px; color:#c9d3c4; display:flex; gap:14px;}
+.tb-icon{
+  position:relative; width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); cursor:pointer; font-size:15px;
+  transition:background .15s;
+}
+.tb-icon:hover{background:rgba(255,255,255,.14);}
+.badge{
+  position:absolute; top:-4px; right:-4px; background:var(--red); color:#fff;
+  font-size:10px; font-weight:700; padding:1px 5px; border-radius:10px; min-width:16px; text-align:center;
+}
+.theme-btn{
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); color:#f4f1ea;
+  border-radius:20px; padding:6px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px;
+}
+.user-chip{display:flex; align-items:center; gap:10px; cursor:pointer; padding-left:10px; border-left:1px solid rgba(255,255,255,.15);}
+.avatar{width:34px; height:34px; border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:700; color:#2b1e05; font-size:13px;}
+.user-meta{line-height:1.2;}
+.user-name{font-size:12.5px; font-weight:600; color:#f4f1ea;}
+.user-role{font-size:11px; color:var(--gold-light);}
+
+/* ===== Layout ===== */
+.shell{display:flex; min-height:calc(100vh - 64px);}
+.sidebar{
+  width:230px; background:var(--green-950); color:#c9d3c4; flex-shrink:0;
+  padding:14px 10px 90px; overflow-y:auto; height:calc(100vh - 64px); position:sticky; top:64px;
+  border-right:1px solid rgba(255,255,255,.05);
+}
+.sb-group-label{font-size:10.5px; letter-spacing:1.2px; color:#65735f; font-weight:700; padding:14px 12px 6px;}
+.sb-item{
+  display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; cursor:pointer;
+  font-size:13.5px; color:#c9d3c4; margin-bottom:2px; position:relative; transition:background .15s, color .15s;
+}
+.sb-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+.sb-item.active{background:var(--gold); color:#2b1e05; font-weight:600;}
+.sb-icon{width:18px; text-align:center; flex-shrink:0; font-size:14px;}
+.sb-badge{margin-left:auto; background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px;}
+
+.main{flex:1; padding:26px 28px 60px; max-width:100%; overflow-x:hidden;}
+.page-header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
+.page-title{font-size:24px; font-weight:700; color:var(--text);}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:3px;}
+.emblem{width:48px; height:56px; opacity:.9;}
+
+/* ===== Stat Cards ===== */
+.stat-grid{
+  display:grid; grid-template-columns:repeat(5, 1fr); gap:16px; margin-bottom:22px;
+}
+.stat-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow); cursor:pointer; transition:transform .15s, box-shadow .15s;
+}
+.stat-card:hover{transform:translateY(-2px); box-shadow:0 4px 20px rgba(20,30,20,.1);}
+.stat-top{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+.stat-icon{width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
+.stat-label{font-size:10.5px; letter-spacing:1px; color:var(--text-faint); font-weight:700;}
+.stat-value{font-size:24px; font-weight:800; color:var(--text); line-height:1;}
+.stat-sub{font-size:11.5px; color:var(--text-dim); margin-top:6px;}
+.stat-bar{height:5px; background:var(--surface-2); border-radius:3px; margin-top:10px; overflow:hidden;}
+.stat-bar-fill{height:100%; border-radius:3px;}
+
+/* ===== Panels ===== */
+.panel-grid{display:grid; grid-template-columns:1.3fr 1.3fr 1fr 1fr; gap:16px; margin-bottom:16px;}
+.panel{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); display:flex; flex-direction:column;
+}
+.panel-head{display:flex; justify-content:space-between; align-items:center; padding:15px 18px; border-bottom:1px solid var(--border);}
+.panel-title{font-size:13.5px; font-weight:700; letter-spacing:.3px;}
+.panel-link{font-size:11.5px; color:var(--green-700); border:1px solid var(--border); padding:4px 10px; border-radius:6px; cursor:pointer; background:none; font-weight:600;}
+[data-theme="dark"] .panel-link{color:var(--gold-light);}
+.panel-body{padding:10px 14px; flex:1; overflow:hidden;}
+
+.notice-item{display:flex; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border); cursor:pointer;}
+.notice-item:last-child{border-bottom:none;}
+.notice-item:hover{background:var(--surface-2);}
+.notice-ico{width:30px; height:30px; border-radius:7px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;}
+.notice-title{font-size:12.8px; font-weight:600; display:flex; align-items:center; gap:6px;}
+.notice-date{font-size:11px; color:var(--text-faint); margin-top:2px;}
+.new-tag{background:#fce8e6; color:var(--red); font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:8px;}
+[data-theme="dark"] .new-tag{background:#3a1c19;}
+
+.event-item{display:flex; gap:12px; padding:9px 4px;}
+.event-time{font-size:11.5px; color:var(--text-faint); font-weight:700; width:42px; flex-shrink:0; padding-top:2px;}
+.event-dot-col{display:flex; flex-direction:column; align-items:center; padding-top:4px;}
+.event-dot{width:8px; height:8px; border-radius:50%; background:var(--green-700); flex-shrink:0;}
+.event-line{width:1.5px; flex:1; background:var(--border); margin-top:2px;}
+.event-title{font-size:12.8px; font-weight:600;}
+.event-loc{font-size:11px; color:var(--text-dim);}
+
+.legend-row{display:flex; justify-content:space-between; align-items:center; font-size:12px; padding:5px 0;}
+.legend-dot{width:9px; height:9px; border-radius:2px; margin-right:8px; display:inline-block;}
+.legend-label{display:flex; align-items:center; color:var(--text-dim);}
+.legend-val{font-weight:700;}
+
+.qa-btn{
+  display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:8px; cursor:pointer;
+  font-size:12.8px; font-weight:600; color:var(--text); margin-bottom:2px;
+}
+.qa-btn:hover{background:var(--surface-2);}
+.qa-ico{width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; flex-shrink:0;}
+
+.bottom-grid{display:grid; grid-template-columns:1.4fr 1fr 1.2fr; gap:16px;}
+table{width:100%; border-collapse:collapse; font-size:12.5px;}
+th{text-align:left; color:var(--text-faint); font-weight:700; font-size:10.5px; letter-spacing:.5px; padding:8px 6px; border-bottom:1px solid var(--border);}
+td{padding:9px 6px; border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none; font-weight:700;}
+.mini-bar{background:var(--surface-2); border-radius:3px; height:5px; width:70px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px;}
+.mini-bar-fill{height:100%; background:var(--teal); border-radius:3px;}
+
+.activity-item{display:flex; gap:10px; padding:9px 4px; align-items:flex-start;}
+.act-avatar{width:30px; height:30px; border-radius:50%; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; color:var(--green-700);}
+.act-text{font-size:12.5px; font-weight:600;}
+.act-time{font-size:10.8px; color:var(--text-faint); margin-top:2px;}
+
+.footer-bar{
+  position:fixed; bottom:0; left:0; right:0; height:34px; background:var(--green-950); color:#a9b6a3;
+  display:flex; align-items:center; justify-content:space-between; padding:0 18px; font-size:11px; z-index:30;
+}
+.footer-bar b{color:var(--gold-light);}
+
+@media (max-width:1200px){
+  .stat-grid{grid-template-columns:repeat(3,1fr);}
+  .panel-grid{grid-template-columns:1fr 1fr;}
+  .bottom-grid{grid-template-columns:1fr;}
+}
+@media (max-width:860px){
+  .sidebar{position:fixed; left:-240px; z-index:50; transition:left .2s; box-shadow:4px 0 20px rgba(0,0,0,.3);}
+  .sidebar.open{left:0;}
+  .menu-toggle{display:block;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .panel-grid{grid-template-columns:1fr;}
+  .tb-clock{display:none;}
+  .brand-tag{display:none;}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <div class="crest">RR</div>
+    <div>
+      <div class="brand-name">15 RAJPUTANA RIFLES</div>
+      <div class="brand-tag">BATTALION PORTAL</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tb-clock">
+      <span id="tb-date"></span>
+      <span id="tb-time"></span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌓 <span id="theme-label">Dark</span></button>
+    <div class="tb-icon" title="Messages">✉️<span class="badge">3</span></div>
+    <div class="tb-icon" title="Notifications">🔔<span class="badge">6</span></div>
+    <div class="user-chip">
+      <div class="avatar">SM</div>
+      <div class="user-meta">
+        <div class="user-name">Subedar Major</div>
+        <div class="user-role">Admin ▾</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-item active"><span class="sb-icon">⌂</span>Dashboard</div>
+    <div class="sb-group-label">MAIN</div>
+    <div class="sb-item"><span class="sb-icon">👤</span>Personnel</div>
+    <div class="sb-item"><span class="sb-icon">🏢</span>Companies</div>
+    <div class="sb-item"><span class="sb-icon">🗓️</span>Leave Management</div>
+    <div class="sb-item"><span class="sb-icon">🎯</span>Training Management</div>
+    <div class="sb-item"><span class="sb-icon">🔫</span>Weapon &amp; Equipment</div>
+    <div class="sb-item"><span class="sb-icon">🚚</span>Vehicles</div>
+    <div class="sb-item"><span class="sb-icon">📦</span>Store &amp; Inventory</div>
+    <div class="sb-item"><span class="sb-icon">📁</span>Documents</div>
+    <div class="sb-group-label">OPERATIONS</div>
+    <div class="sb-item"><span class="sb-icon">🛰️</span>Operations</div>
+    <div class="sb-item"><span class="sb-icon">🗺️</span>Maps</div>
+    <div class="sb-item"><span class="sb-icon">📜</span>SOPs &amp; Orders</div>
+    <div class="sb-item"><span class="sb-icon">🧾</span>Logs</div>
+    <div class="sb-group-label">COMMUNICATION</div>
+    <div class="sb-item"><span class="sb-icon">📢</span>Notices</div>
+    <div class="sb-item"><span class="sb-icon">💬</span>Messages<span class="sb-badge">2</span></div>
+    <div class="sb-item"><span class="sb-icon">📅</span>Calendar</div>
+    <div class="sb-item"><span class="sb-icon">📇</span>Directory</div>
+    <div class="sb-group-label">REPORTS</div>
+    <div class="sb-item"><span class="sb-icon">📊</span>Reports</div>
+    <div class="sb-item"><span class="sb-icon">📈</span>MIS Dashboard</div>
+    <div class="sb-group-label">ADMINISTRATION</div>
+    <div class="sb-item"><span class="sb-icon">🛡️</span>User Management</div>
+    <div class="sb-item"><span class="sb-icon">⚙️</span>System Settings</div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Welcome, Subedar Major</div>
+        <div class="page-sub">15 Rajputana Rifles — Strength · Honour · Discipline</div>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="panel-grid">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">NOTICES &amp; ORDERS</span><button class="panel-link">View All</button></div>
+        <div class="panel-body" id="notices"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">TODAY'S EVENTS</span><button class="panel-link">View Calendar</button></div>
+        <div class="panel-body" id="events"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">LEAVE STATUS</span><button class="panel-link">View All</button></div>
+        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; padding-top:10px;">
+          <canvas id="leaveChart" width="150" height="150"></canvas>
+          <div id="leave-legend" style="width:100%; margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">QUICK ACTIONS</span></div>
+        <div class="panel-body" id="quick-actions"></div>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">COMPANY WISE STRENGTH</span><button class="panel-link">View All</button></div>
+        <div class="panel-body"><table id="company-table"></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">TRAINING STATUS</span><button class="panel-link">View All</button></div>
+        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; padding-top:10px;">
+          <canvas id="trainingChart" width="150" height="150"></canvas>
+          <div id="training-legend" style="width:100%; margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">RECENT ACTIVITIES</span><button class="panel-link">View All</button></div>
+        <div class="panel-body" id="activities"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-bar">
+  <span><b>15 RAJPUTANA RIFLES</b> — Every Man An Emperor</span>
+  <span>This is a secure network. Unauthorized access is prohibited.</span>
+  <span>Version 1.0.0</span>
+</div>
+
+<script>
+/* ---------- Mock Data (swap for live API calls) ---------- */
+const stats = [
+  {label:"TOTAL STRENGTH", value:645, sub:"Officers: 18 | JCOs: 102 | ORs: 525", pct:100, color:"var(--green-700)", bg:"#e7f0e8", icon:"👥"},
+  {label:"PRESENT STRENGTH", value:608, sub:"93.27%", pct:93.27, color:"var(--blue)", bg:"#e6eef7", icon:"🧍"},
+  {label:"ON LEAVE", value:37, sub:"5.73%", pct:5.73, color:"var(--orange)", bg:"#fbeee0", icon:"🗓️"},
+  {label:"IN TRAINING", value:28, sub:"4.34%", pct:4.34, color:"var(--purple)", bg:"#efe8f5", icon:"🎓"},
+  {label:"VEHICLES", value:48, sub:"Serviceable: 42 | Unserviceable: 6", pct:87.5, color:"var(--teal)", bg:"#e5f2ef", icon:"🚚"},
+];
+
+const notices = [
+  {icon:"📋", title:"CO's Orders — 16 May 2025", date:"Issued on 16 May 2025", tag:"New"},
+  {icon:"📅", title:"Training Schedule — May 2025", date:"Issued on 15 May 2025", tag:"New"},
+  {icon:"🔧", title:"Weapon Inspection Orders", date:"Issued on 14 May 2025"},
+  {icon:"🌴", title:"Leave Plan — June 2025", date:"Issued on 13 May 2025"},
+  {icon:"🔒", title:"Security Instructions", date:"Issued on 12 May 2025"},
+];
+
+const events = [
+  {time:"0600", title:"PT Parade", loc:"Quarter Guard"},
+  {time:"0830", title:"Weapon Training", loc:"Range No. 2"},
+  {time:"1100", title:"Company Commander's Conference", loc:"Conference Room"},
+  {time:"1530", title:"Sports Practice", loc:"Sports Ground"},
+  {time:"1730", title:"Retreat Parade", loc:"Quarter Guard"},
+];
+
+const leaveData = {labels:["Sanctioned","On Leave","Applied","Rejected"], values:[25,37,12,2], colors:["#3a6ea5","#3f8f7f","#d68a3c","#c65b4e"]};
+const trainingData = {labels:["Basic Course","Specialist Course","Refresher Course","Others"], values:[12,8,5,3], colors:["#3f8f7f","#3a6ea5","#d68a3c","#7c5ea3"]};
+
+const companies = [
+  {name:"Headquarters Coy", off:3, jco:15, or:68, total:86, pct:96},
+  {name:"A Company", off:2, jco:16, or:70, total:88, pct:95},
+  {name:"B Company", off:2, jco:15, or:69, total:86, pct:93},
+  {name:"C Company", off:2, jco:14, or:67, total:83, pct:92},
+  {name:"D Company", off:2, jco:15, or:69, total:86, pct:94},
+];
+
+const activities = [
+  {icon:"✅", text:"Rfn. 123456X Ajay Singh — Leave Approved", time:"17 May 2025, 09:15"},
+  {icon:"🎯", text:"Training Record Updated — A Coy", time:"17 May 2025, 08:45"},
+  {icon:"🔫", text:"Weapon Issue — INSAS Rifle", time:"17 May 2025, 08:30"},
+  {icon:"🚚", text:"Vehicle Service — MH12AB1234", time:"17 May 2025, 07:50"},
+  {icon:"📢", text:"New Notice Added — CO's Orders", time:"16 May 2025, 18:30"},
+];
+
+const quickActions = [
+  {icon:"👤", label:"Add Personnel", color:"#3f8f7f"},
+  {icon:"🗓️", label:"Apply Leave", color:"#d68a3c"},
+  {icon:"📢", label:"Add Notice", color:"#3a6ea5"},
+  {icon:"📁", label:"Upload Document", color:"#7c5ea3"},
+  {icon:"🚚", label:"Add Vehicle", color:"#c65b4e"},
+  {icon:"📊", label:"Generate Report", color:"#26512f"},
+];
+
+/* ---------- Render ---------- */
+function renderStats(){
+  document.getElementById('stat-grid').innerHTML = stats.map(s=>`
+    <div class="stat-card" onclick="alert('Opening ${s.label}...')">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:${s.bg}; color:${s.color}">${s.icon}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-sub">${s.sub}</div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${s.pct}%; background:${s.color}"></div></div>
+    </div>`).join('');
+}
+
+function renderNotices(){
+  document.getElementById('notices').innerHTML = notices.map(n=>`
+    <div class="notice-item">
+      <div class="notice-ico">${n.icon}</div>
+      <div>
+        <div class="notice-title">${n.title} ${n.tag?`<span class="new-tag">${n.tag}</span>`:''}</div>
+        <div class="notice-date">${n.date}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderEvents(){
+  document.getElementById('events').innerHTML = events.map((e,i)=>`
+    <div class="event-item">
+      <div class="event-time">${e.time}</div>
+      <div class="event-dot-col"><div class="event-dot"></div>${i<events.length-1?'<div class="event-line"></div>':''}</div>
+      <div><div class="event-title">${e.title}</div><div class="event-loc">${e.loc}</div></div>
+    </div>`).join('');
+}
+
+function renderQuickActions(){
+  document.getElementById('quick-actions').innerHTML = quickActions.map(q=>`
+    <div class="qa-btn"><div class="qa-ico" style="background:${q.color}">${q.icon}</div>${q.label}</div>`).join('');
+}
+
+function renderCompanyTable(){
+  document.getElementById('company-table').innerHTML = `
+    <tr><th>Company</th><th>Off</th><th>JCO</th><th>OR</th><th>Total</th><th>Strength %</th></tr>
+    ${companies.map(c=>`
+      <tr>
+        <td>${c.name}</td><td>${c.off}</td><td>${c.jco}</td><td>${c.or}</td><td>${c.total}</td>
+        <td><span class="mini-bar"><span class="mini-bar-fill" style="width:${c.pct}%"></span></span>${c.pct}%</td>
+      </tr>`).join('')}
+    <tr><td>Total</td><td>${companies.reduce((a,c)=>a+c.off,0)}</td><td>${companies.reduce((a,c)=>a+c.jco,0)}</td>
+      <td>${companies.reduce((a,c)=>a+c.or,0)}</td><td>${companies.reduce((a,c)=>a+c.total,0)}</td><td>94%</td></tr>`;
+}
+
+function renderActivities(){
+  document.getElementById('activities').innerHTML = activities.map(a=>`
+    <div class="activity-item">
+      <div class="act-avatar">${a.icon}</div>
+      <div><div class="act-text">${a.text}</div><div class="act-time">${a.time}</div></div>
+    </div>`).join('');
+}
+
+function renderLegend(elId, data, centerLabel){
+  const total = data.values.reduce((a,b)=>a+b,0);
+  document.getElementById(elId).innerHTML = data.labels.map((l,i)=>`
+    <div class="legend-row">
+      <span class="legend-label"><span class="legend-dot" style="background:${data.colors[i]}"></span>${l}</span>
+      <span class="legend-val">${data.values[i]} (${(data.values[i]/total*100).toFixed(2)}%)</span>
+    </div>`).join('');
+}
+
+let leaveChart, trainingChart;
+function renderCharts(){
+  const opts = (data, centerText)=>({
+    type:'doughnut',
+    data:{labels:data.labels, datasets:[{data:data.values, backgroundColor:data.colors, borderWidth:0}]},
+    options:{cutout:'68%', plugins:{legend:{display:false}}, responsive:false}
+  });
+  if(leaveChart) leaveChart.destroy();
+  if(trainingChart) trainingChart.destroy();
+  leaveChart = new Chart(document.getElementById('leaveChart'), opts(leaveData));
+  trainingChart = new Chart(document.getElementById('trainingChart'), opts(trainingData));
+}
+
+function tick(){
+  const now = new Date();
+  document.getElementById('tb-date').textContent = now.toLocaleDateString('en-GB', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  document.getElementById('tb-time').textContent = now.toLocaleTimeString('en-GB');
+}
+setInterval(tick, 1000); tick();
+
+function toggleTheme(){
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-label').textContent = isDark ? 'Dark' : 'Light';
+}
+
+renderStats(); renderNotices(); renderEvents(); renderQuickActions();
+renderCompanyTable(); renderActivities();
+renderCharts();
+renderLegend('leave-legend', leaveData); renderLegend('training-legend', trainingData);
+
+// sidebar item click -> just toggles active state (SPA routing would live here)
+document.querySelectorAll('.sb-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
