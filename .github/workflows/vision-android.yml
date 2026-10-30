@@ -3,6 +3,9 @@ on:
   push:
     paths: ['vision/**', '.github/workflows/vision-android.yml']
   workflow_dispatch:
+concurrency:
+  group: vision-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
