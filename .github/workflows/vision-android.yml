@@ -7,7 +7,7 @@ concurrency:
   group: vision-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,6 +24,14 @@ jobs:
         run: |
           gradle --no-daemon testDebugUnitTest assembleDebug
           echo "::notice title=VISION::GRADLE_BUILD_AND_TESTS_OK"
+      - name: Publish debug APK as a prerelease
+        if: github.ref == 'refs/heads/vision/phase-0'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk vision-debug.apk
+          gh release create "vision-dev-${{ github.run_number }}" vision-debug.apk --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease --title "VISION dev build ${{ github.run_number }}" --notes "Debug APK from ${{ github.sha }}. Unverified on real devices; see vision/docs/KNOWN_LIMITATIONS.md."
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
