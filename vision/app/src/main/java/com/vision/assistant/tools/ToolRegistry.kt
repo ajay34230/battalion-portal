@@ -37,8 +37,27 @@ class ToolRegistry(private val app: VisionApp) {
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))
             }
             is Intent.Search -> research.run(intent.query)
+            is Intent.WhatsAppDraft -> device.whatsappDraft(intent.text)
+            is Intent.ReadNotifications -> notifications(intent.whatsappOnly)
+            Intent.ReadEmail -> ToolResult.Failure(Say(
+                "Gmail isn't connected. Sign-in needs a Google OAuth client that hasn't been set up in this build.",
+                "Gmail connected nahi hai. Sign-in ke liye Google OAuth client chahiye jo is build mein set nahi hai.",
+                "Gmail जुड़ा नहीं है। साइन-इन के लिए Google OAuth क्लाइंट चाहिए जो इस बिल्ड में सेट नहीं है।"))
             is Intent.Chat -> ToolResult.Failure(Say("no tool"))
         }
+    }
+
+    private suspend fun notifications(whatsappOnly: Boolean): ToolResult {
+        if (!android.provider.Settings.Secure.getString(app.contentResolver, "enabled_notification_listeners").orEmpty().contains(app.packageName))
+            return ToolResult.Failure(Say(
+                "Notification access is off. Enable VISION under Settings > Notifications > Notification access.",
+                "Notification access band hai. Settings > Notifications > Notification access mein VISION ko on karein.",
+                "सूचना एक्सेस बंद है। सेटिंग्स > सूचनाएँ > सूचना एक्सेस में VISION चालू करें।"))
+        val all = app.database.notifications().recent(30)
+            .filter { !whatsappOnly || com.vision.assistant.comms.NotificationSummary.isWhatsApp(it.pkg) }
+        if (all.isEmpty()) return ToolResult.Success(Say("No recent notifications.", "Koi nayi notification nahi.", "कोई नई सूचना नहीं।"))
+        val shown = all.take(8).joinToString("\n") { "• ${it.title}: ${it.text}" }
+        return ToolResult.Success(Say.plain(shown))
     }
 
     private suspend fun setReminder(i: Intent.SetReminder): ToolResult {

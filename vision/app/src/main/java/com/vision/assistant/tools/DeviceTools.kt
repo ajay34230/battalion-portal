@@ -83,6 +83,16 @@ class DeviceTools(private val ctx: Context) {
         } catch (e: Exception) { ToolResult.Failure(Say("No clock app accepted the alarm: ${e.message}")) }
     }
 
+    /** Opens WhatsApp with the text prefilled. The user chooses the chat and presses send; VISION never sends. */
+    fun whatsappDraft(text: String): ToolResult = ToolResult.NeedsConfirmation(
+        Say("Open WhatsApp with this draft: \"$text\"?", "WhatsApp mein yeh draft kholun: \"$text\"?", "WhatsApp में यह ड्राफ़्ट खोलूँ: \"$text\"?"),
+        "whatsapp_draft",
+    ) {
+        val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text).setPackage("com.whatsapp").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try { ctx.startActivity(i); ToolResult.Success(Say("WhatsApp is open. Pick the chat and press send.", "WhatsApp khul gaya. Chat chuniye aur send dabaiye.", "WhatsApp खुल गया। चैट चुनें और भेजें दबाएँ।")) }
+        catch (e: Exception) { ToolResult.Failure(Say("WhatsApp isn't available: ${e.message}")) }
+    }
+
     fun time(): ToolResult {
         val s = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date())
         return ToolResult.Success(Say("It's $s.", "Abhi $s hua hai.", "अभी $s बजे हैं।"))

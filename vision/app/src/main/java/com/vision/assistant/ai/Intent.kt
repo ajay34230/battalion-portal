@@ -9,6 +9,9 @@ sealed interface Intent {
     data class Search(val query: String) : Intent
     data class Remember(val text: String) : Intent
     data class Recall(val query: String) : Intent
+    data class WhatsAppDraft(val text: String) : Intent
+    data class ReadNotifications(val whatsappOnly: Boolean) : Intent
+    data object ReadEmail : Intent
     data object AskTime : Intent
     data object AskBattery : Intent
     data object ListTasks : Intent
@@ -42,6 +45,11 @@ object IntentParser {
         if (Regex("what('s| is)? the time|time kya|kitne baje|abhi kitna|समय क्या|कितने बजे").containsMatchIn(l)) return Intent.AskTime
         if (Regex("battery|बैटरी").containsMatchIn(l)) return Intent.AskBattery
         if (Regex("pending tasks|my tasks|to-?do|mere kaam|tasks kya|कौन से काम").containsMatchIn(l)) return Intent.ListTasks
+
+        Regex("^(?:send\\s+)?whatsapp(?:\\s+message)?(?:\\s+saying|\\s+ki)?\\s+(.+)$").find(l)?.let { if (!Regex("^(open|kholo)").containsMatchIn(l)) return Intent.WhatsAppDraft(it.groupValues[1].trim()) }
+        if (Regex("whatsapp (messages|notifications)|whatsapp ke messages|whatsapp ke notification").containsMatchIn(l)) return Intent.ReadNotifications(true)
+        if (Regex("read (my )?notifications|notifications (batao|padho|sunao)|meri notifications").containsMatchIn(l)) return Intent.ReadNotifications(false)
+        if (Regex("(unread )?e-?mails?|gmail|mail (batao|padho)").containsMatchIn(l)) return Intent.ReadEmail
 
         Regex("^(?:call|dial|phone)\\s+(.+)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }
         Regex("^(.+?)\\s+(?:ko\\s+)?(?:phone|call)\\s*(?:karo|kar do|lagao|laga do)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }

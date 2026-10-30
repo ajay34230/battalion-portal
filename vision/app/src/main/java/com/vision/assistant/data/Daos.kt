@@ -39,3 +39,11 @@ interface AuditDao {
     @Insert suspend fun insert(a: AuditEntry): Long
     @Query("SELECT * FROM audit_entry ORDER BY id DESC LIMIT 200") fun recent(): Flow<List<AuditEntry>>
 }
+
+@Dao
+interface NotificationDao {
+    @Insert suspend fun insert(n: NotificationLog): Long
+    @Query("SELECT * FROM notification_log ORDER BY id DESC LIMIT :n") suspend fun recent(n: Int): List<NotificationLog>
+    @Query("DELETE FROM notification_log WHERE id NOT IN (SELECT id FROM notification_log ORDER BY id DESC LIMIT 100)") suspend fun trim()
+    @Query("DELETE FROM notification_log") suspend fun clear()
+}

@@ -17,13 +17,15 @@ class Orchestrator(private val app: VisionApp, private val engine: LlmEngine = R
     private val tools = ToolRegistry(app)
     val engineName: String get() = engine.name
 
-    suspend fun handle(userText: String): AgentReply {
+    suspend fun handle(userText: String, locked: Boolean = false): AgentReply {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
         val intent = IntentParser.parse(userText)
 
-        val reply = if (intent is Intent.Chat) {
+        val reply = if (locked && !com.vision.assistant.privacy.LockPolicy.allowedWhenLocked(intent)) {
+            AgentReply(Say("Please unlock your phone first.", "Pehle phone unlock kijiye.", "पहले फ़ोन अनलॉक कीजिए।").`in`(lang), lang)
+        } else if (intent is Intent.Chat) {
             val history = db.chat().recent(10).reversed().map { ChatTurn(it.role, it.text) }
             AgentReply(engine.reply(history, userText, lang), lang)
         } else when (val r = tools.execute(intent)) {

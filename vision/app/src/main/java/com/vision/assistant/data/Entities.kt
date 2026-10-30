@@ -39,3 +39,13 @@ data class AuditEntry(
     val outcome: String, // success | failure | denied | cancelled
     val createdAt: Long = System.currentTimeMillis(),
 )
+
+@Entity(tableName = "notification_log")
+data class NotificationLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val pkg: String,
+    val title: String,
+    val text: String,
+    val sensitive: Boolean,
+    val createdAt: Long = System.currentTimeMillis(),
+)
