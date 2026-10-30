@@ -1,6 +1,9 @@
 name: VISION resolve resource hashes
 on:
   workflow_dispatch:
+  push:
+    branches: ['vision/phase-0']
+    paths: ['.github/workflows/vision-resource-hashes.yml']
 permissions:
   contents: read
 jobs:
