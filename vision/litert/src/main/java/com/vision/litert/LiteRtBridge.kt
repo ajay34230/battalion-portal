@@ -19,7 +19,7 @@ class LiteRtBridge {
     fun generate(system: String, prompt: String): String {
         val e = engine ?: error("Model not loaded")
         return e.createConversation(ConversationConfig(systemInstruction = Contents.of(system))).use { c ->
-            c.sendMessage(prompt).text
+            c.sendMessage(prompt).toString()
         }
     }
 
