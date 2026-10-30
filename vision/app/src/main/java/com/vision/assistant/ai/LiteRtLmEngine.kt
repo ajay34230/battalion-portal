@@ -1,11 +1,7 @@
 package com.vision.assistant.ai
 
 import android.content.Context
-import com.google.ai.edge.litertlm.Backend
-import com.google.ai.edge.litertlm.ConversationConfig
-import com.google.ai.edge.litertlm.Contents
-import com.google.ai.edge.litertlm.Engine
-import com.google.ai.edge.litertlm.EngineConfig
+import com.vision.litert.LiteRtBridge
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -16,24 +12,19 @@ import kotlinx.coroutines.withContext
 class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, label: String) : LlmEngine {
     override val name = label
     override val isNeuralModelLoaded = true
-    private var engine: Engine? = null
+    private val bridge = LiteRtBridge()
     private val lock = Mutex()
 
     suspend fun load() = withContext(Dispatchers.IO) {
-        val e = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.CPU(), cacheDir = ctx.cacheDir.path))
-        e.initialize()
-        engine = e
+        bridge.load(modelFile.absolutePath, ctx.cacheDir.path)
     }
 
-    fun close() { try { engine?.close() } catch (_: Throwable) {}; engine = null }
+    fun close() = bridge.close()
 
     private suspend fun generate(system: String, prompt: String): String = lock.withLock {
         withContext(Dispatchers.IO) {
-            val e = engine ?: error("Model not loaded")
-            e.createConversation(ConversationConfig(systemInstruction = Contents.of(system))).use { c ->
-                // "/no_think" turns off Qwen3's long reasoning so replies stay fast.
-                LlmText.clean(c.sendMessage("$prompt /no_think").text)
-            }
+            // "/no_think" turns off Qwen3's long reasoning so replies stay fast.
+            LlmText.clean(bridge.generate(system, "$prompt /no_think"))
         }
     }
 
