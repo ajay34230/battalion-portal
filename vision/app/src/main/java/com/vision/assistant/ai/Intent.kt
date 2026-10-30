@@ -1,0 +1,77 @@
+package com.vision.assistant.ai
+
+data class ParsedTime(val dayOffset: Int, val hour: Int, val minute: Int)
+
+sealed interface Intent {
+    data class OpenApp(val app: String) : Intent
+    data class SetReminder(val text: String, val time: ParsedTime?, val repeatWeekday: String?) : Intent
+    data class Call(val contact: String) : Intent
+    data class Search(val query: String) : Intent
+    data object AskTime : Intent
+    data object AskBattery : Intent
+    data object ListTasks : Intent
+    data class Chat(val text: String) : Intent
+}
+
+/** Rule-based Hindi/English/Hinglish intent parser. Used on every device and as fallback when no LLM is loaded. */
+object IntentParser {
+    private val wake = Regex("^\\s*(hey\\s+vision|ok\\s+vision|vision)\\s*[,:]?\\s*", RegexOption.IGNORE_CASE)
+    private val stop = setOf("my", "the", "mera", "meri", "mere", "app", "ko", "please", "plz", "karo", "kar", "do", "de", "na")
+
+    private val weekdays = mapOf(
+        "monday" to "MON", "somvar" to "MON", "tuesday" to "TUE", "mangalvar" to "TUE",
+        "wednesday" to "WED", "budhvar" to "WED", "thursday" to "THU", "guruvar" to "THU", "veervar" to "THU",
+        "friday" to "FRI", "shukravar" to "FRI", "saturday" to "SAT", "shanivar" to "SAT",
+        "sunday" to "SUN", "ravivar" to "SUN", "itwar" to "SUN",
+    )
+
+    fun parse(raw: String): Intent {
+        val t = wake.replace(raw, "").trim().trimEnd('.', '!', '?', '।')
+        val l = t.lowercase()
+        if (l.isEmpty()) return Intent.Chat(raw)
+
+        if (Regex("remind|reminder|yaad dila|utha dena|utha do|jaga dena|alarm|याद दिला|उठा").containsMatchIn(l)) {
+            val repeat = if (Regex("every|har ").containsMatchIn(l)) weekdays.entries.firstOrNull { l.contains(it.key) }?.value else null
+            return Intent.SetReminder(reminderText(t), parseTime(l), repeat)
+        }
+        if (Regex("what('s| is)? the time|time kya|kitne baje|abhi kitna|समय क्या|कितने बजे").containsMatchIn(l)) return Intent.AskTime
+        if (Regex("battery|बैटरी").containsMatchIn(l)) return Intent.AskBattery
+        if (Regex("pending tasks|my tasks|to-?do|mere kaam|tasks kya|कौन से काम").containsMatchIn(l)) return Intent.ListTasks
+
+        Regex("^(?:call|dial|phone)\\s+(.+)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }
+        Regex("^(.+?)\\s+(?:ko\\s+)?(?:phone|call)\\s*(?:karo|kar do|lagao|laga do)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }
+
+        Regex("^(?:open|launch|start|kholo|khol do)\\s+(.+)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
+        Regex("^(.+?)\\s+(?:kholo|khol do|open karo|khol|chalu karo|खोलो|खोल दो)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
+
+        Regex("^(?:search|research|find|look up|dhundo|khojo|dhoondo)\\s+(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
+        Regex("^(?:mujhe\\s+)?batao\\s+(?:ki\\s+)?(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
+
+        return Intent.Chat(t)
+    }
+
+    private fun clean(s: String) = s.split(Regex("\\s+")).filter { it !in stop }.joinToString(" ").trim()
+
+    fun parseTime(l: String): ParsedTime? {
+        val m = Regex("(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm|baje|बजे)?").find(l) ?: return null
+        var hour = m.groupValues[1].toInt()
+        val minute = m.groupValues[2].ifEmpty { "0" }.toInt()
+        if (hour > 23 || minute > 59) return null
+        val mark = m.groupValues[3]
+        val pmWord = Regex("pm|shaam|evening|raat|night|dopahar|afternoon").containsMatchIn(l)
+        val amWord = Regex("am|subah|morning|सुबह").containsMatchIn(l)
+        if (mark == "pm" || (mark != "am" && pmWord && !amWord)) { if (hour < 12) hour += 12 }
+        if ((mark == "am" || amWord) && hour == 12) hour = 0
+        val day = when {
+            Regex("day after tomorrow|parso").containsMatchIn(l) -> 2
+            Regex("tomorrow|kal|कल").containsMatchIn(l) -> 1
+            else -> 0
+        }
+        return ParsedTime(day, hour, minute)
+    }
+
+    private fun reminderText(t: String): String {
+        val m = Regex("(?:to|ki|ke liye|कि)\\s+(.+)$", RegexOption.IGNORE_CASE).find(t)
+        return (m?.groupValues?.get(1) ?: t).trim()
+    }
+}

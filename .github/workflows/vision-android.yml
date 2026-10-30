@@ -18,13 +18,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.9' }
       - name: Unit tests and debug APK
-        run: gradle --no-daemon testDebugUnitTest assembleDebug
+        run: |
+          gradle --no-daemon testDebugUnitTest assembleDebug
+          echo "::notice title=VISION::GRADLE_BUILD_AND_TESTS_OK"
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: vision-debug-apk
           path: vision/app/build/outputs/apk/debug/*.apk
       - uses: actions/upload-artifact@v4
         if: failure()
+        continue-on-error: true
         with:
           name: vision-build-reports
           path: vision/app/build/reports
