@@ -52,6 +52,9 @@ dependencies {
     ksp("androidx.room:room-compiler:$room")
 
     implementation("org.jsoup:jsoup:1.18.1")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.0")
+    implementation("com.alphacephei:vosk-android:0.3.47")
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }

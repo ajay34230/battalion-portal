@@ -2,6 +2,7 @@ package com.vision.assistant.ai
 
 import com.vision.assistant.VisionApp
 import com.vision.assistant.data.ChatMessage
+import com.vision.assistant.privacy.LockPolicy
 import com.vision.assistant.tools.Say
 import com.vision.assistant.tools.ToolRegistry
 import com.vision.assistant.tools.ToolResult
@@ -13,21 +14,27 @@ data class AgentReply(
     val needsPermission: String? = null,
 )
 
-class Orchestrator(private val app: VisionApp, private val engine: LlmEngine = RuleBasedEngine()) {
+class Orchestrator(private val app: VisionApp) {
     private val tools = ToolRegistry(app)
-    val engineName: String get() = engine.name
 
     suspend fun handle(userText: String, locked: Boolean = false): AgentReply {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
-        val intent = IntentParser.parse(userText)
+        val engine = app.engines.current()
 
-        val reply = if (locked && !com.vision.assistant.privacy.LockPolicy.allowedWhenLocked(intent)) {
+        // The trained model understands the request; the rule parser is only the fallback.
+        val plan = try { engine.plan(userText) } catch (_: Throwable) { null }
+        val intent = plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: IntentParser.parse(userText)
+
+        val reply = if (locked && !LockPolicy.allowedWhenLocked(intent)) {
             AgentReply(Say("Please unlock your phone first.", "Pehle phone unlock kijiye.", "पहले फ़ोन अनलॉक कीजिए।").`in`(lang), lang)
         } else if (intent is Intent.Chat) {
-            val history = db.chat().recent(10).reversed().map { ChatTurn(it.role, it.text) }
-            AgentReply(engine.reply(history, userText, lang), lang)
+            val text = plan?.reply ?: run {
+                val history = db.chat().recent(10).reversed().dropLast(1).map { ChatTurn(it.role, it.text) }
+                try { engine.reply(history, userText, lang) } catch (t: Throwable) { "The language model failed: ${t.message}" }
+            }
+            AgentReply(text, lang)
         } else when (val r = tools.execute(intent)) {
             is ToolResult.Success -> AgentReply(r.say.`in`(lang), lang)
             is ToolResult.Failure -> AgentReply(r.say.`in`(lang), lang)
@@ -38,7 +45,6 @@ class Orchestrator(private val app: VisionApp, private val engine: LlmEngine = R
         return reply
     }
 
-    /** Runs a confirmed action and records the outcome in the audit log. */
     suspend fun confirmed(c: ToolResult.NeedsConfirmation, lang: Lang): String {
         val r = c.run()
         tools.audit(c.toolName, "confirmed", r)

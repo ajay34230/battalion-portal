@@ -38,8 +38,8 @@ fun HomeScreen(profile: DeviceProfile, go: (String) -> Unit) {
         Text("Personal AI agent — foundation build. Device tier: ${profile.tier}")
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
-                Text("AI engine: rule-based (no language model installed)")
-                Text("Voice: push-to-talk in Chat (wake word not built)")
+                Text("AI: runs a downloaded Qwen3 model on this phone (install it under Models & downloads)")
+                Text("Voice: push-to-talk in Chat; Speak notification in Settings")
             }
         }
         Button(onClick = { go(Routes.CHAT) }, modifier = Modifier.fillMaxWidth()) { Text("Talk to VISION") }
@@ -47,6 +47,9 @@ fun HomeScreen(profile: DeviceProfile, go: (String) -> Unit) {
         Button(onClick = { go(Routes.MEMORY) }, modifier = Modifier.fillMaxWidth()) { Text("Memory") }
         Button(onClick = { go(Routes.MODELS) }, modifier = Modifier.fillMaxWidth()) { Text("Models & downloads") }
         Button(onClick = { go(Routes.DEVICE) }, modifier = Modifier.fillMaxWidth()) { Text("This device") }
+        Button(onClick = { go(Routes.TERMUX) }, modifier = Modifier.fillMaxWidth()) { Text("Termux") }
+        Button(onClick = { go(Routes.PRIVACY) }, modifier = Modifier.fillMaxWidth()) { Text("Privacy centre") }
+        Button(onClick = { go(Routes.SETTINGS) }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
         Button(onClick = { go(Routes.PERMISSIONS) }, modifier = Modifier.fillMaxWidth()) { Text("Permissions") }
     }
 }

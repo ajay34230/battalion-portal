@@ -16,16 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.vision.assistant.VisionApp
-import com.vision.assistant.core.DownloadResult
 import com.vision.assistant.core.InstallState
-import com.vision.assistant.core.ModelManager
 import com.vision.assistant.core.ResourceManifest
 import kotlinx.coroutines.launch
 import java.text.DateFormat
@@ -77,37 +74,36 @@ fun MemoryScreen(app: VisionApp, back: () -> Unit) {
 
 @Composable
 fun ModelsScreen(app: VisionApp, back: () -> Unit) {
-    val ctx = LocalContext.current
-    val mgr = remember { ModelManager(java.io.File(ctx.filesDir, "models"), app.deviceProfile) }
-    val scope = rememberCoroutineScope()
-    val status = remember { mutableStateMapOf<String, String>() }
+    val mgr = remember { com.vision.assistant.core.Downloads.manager(app) }
+    val status by com.vision.assistant.core.Downloads.status.collectAsState()
+    var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.vision.assistant.core.ResourceEntry?>(null) }
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Models & resources", style = MaterialTheme.typography.headlineSmall)
-        Text("Tier ${app.deviceProfile.tier}: ${app.deviceProfile.totalRamMb} MB RAM, ${app.deviceProfile.freeStorageMb} MB free. A resource counts as installed only after its checksum matches.", style = MaterialTheme.typography.bodySmall)
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Models & downloads", style = MaterialTheme.typography.headlineSmall)
+        Text("This phone: tier ${app.deviceProfile.tier}, ${app.deviceProfile.totalRamMb} MB RAM, ${app.deviceProfile.freeStorageMb} MB free. A model counts as installed only after its SHA-256 matches the official value. Downloads continue in the background and resume if interrupted.", style = MaterialTheme.typography.bodySmall)
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(ResourceManifest.entries) { e ->
-                val st = mgr.state(e)
+                val st = remember(status[e.id]) { mgr.state(e) }
                 Column {
-                    Text("${e.title} (~${e.sizeMb} MB, ${e.license})")
-                    Text("State: $st · ${if (mgr.compatible(e)) "compatible" else "not compatible"}" + (status[e.id]?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodySmall)
-                    if (e.sha256.isBlank()) Text("No official hash recorded yet: downloads stay UNVERIFIED and unusable.", style = MaterialTheme.typography.bodySmall)
+                    Text("${e.title}")
+                    Text("${e.sizeMb} MB · ${e.license} · ${e.languages}", style = MaterialTheme.typography.bodySmall)
+                    if (e.note.isNotBlank()) Text(e.note, style = MaterialTheme.typography.bodySmall)
+                    Text("State: $st · ${if (mgr.compatible(e)) "fits this phone" else "does not fit this phone"}" + (status[e.id]?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(enabled = mgr.compatible(e), onClick = {
-                            scope.launch {
-                                status[e.id] = "downloading…"
-                                val r = mgr.download(e) { d, t -> status[e.id] = if (t > 0) "${d * 100 / t}%" else "${d / 1_000_000} MB" }
-                                status[e.id] = when (r) {
-                                    is DownloadResult.Installed -> "installed & verified"
-                                    is DownloadResult.Unverified -> "downloaded, UNVERIFIED (sha256 ${r.computedSha256.take(12)}…)"
-                                    is DownloadResult.Failed -> "failed: ${r.reason}"
-                                }
-                            }
-                        }) { Text("Download (Wi-Fi recommended)") }
-                        if (st != InstallState.NOT_INSTALLED) OutlinedButton(onClick = { mgr.delete(e); status[e.id] = "deleted" }) { Text("Delete") }
+                        if (st != InstallState.INSTALLED) Button(enabled = mgr.compatible(e), onClick = { confirm = e }) { Text("Download") }
+                        if (st != InstallState.NOT_INSTALLED) OutlinedButton(onClick = { mgr.delete(e); com.vision.assistant.core.Downloads.status.value = status + (e.id to "deleted"); app.engines.invalidate() }) { Text("Delete") }
                     }
                 }
             }
         }
         OutlinedButton(onClick = back) { Text("Back") }
+    }
+    confirm?.let { e ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text("Download ${e.title}?") },
+            text = { Text("Size: ${e.sizeMb} MB. This uses your internet data (Wi-Fi recommended) and storage. Source: ${java.net.URL(e.url).host}.") },
+            confirmButton = { Button(onClick = { com.vision.assistant.core.Downloads.start(app, e); confirm = null }) { Text("Download") } },
+            dismissButton = { OutlinedButton(onClick = { confirm = null }) { Text("Cancel") } },
+        )
     }
 }

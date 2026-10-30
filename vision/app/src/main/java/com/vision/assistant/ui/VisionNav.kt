@@ -14,6 +14,9 @@ object Routes {
     const val MODELS = "models"
     const val DEVICE = "device"
     const val PERMISSIONS = "permissions"
+    const val SETTINGS = "settings"
+    const val PRIVACY = "privacy"
+    const val TERMUX = "termux"
 }
 
 @Composable
@@ -28,5 +31,8 @@ fun VisionNav(app: VisionApp) {
         composable(Routes.MODELS) { ModelsScreen(app, back) }
         composable(Routes.DEVICE) { DeviceScreen(app.deviceProfile, back) }
         composable(Routes.PERMISSIONS) { PermissionsScreen(back) }
+        composable(Routes.SETTINGS) { SettingsScreen(app, back) }
+        composable(Routes.PRIVACY) { PrivacyScreen(app, back) }
+        composable(Routes.TERMUX) { TermuxScreen(app, back) }
     }
 }

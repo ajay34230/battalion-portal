@@ -4,20 +4,20 @@ data class ChatTurn(val role: String, val text: String)
 
 interface LlmEngine {
     val name: String
-    /** True only when real model files are installed and verified. */
+    /** True only when a verified model file is loaded. */
     val isNeuralModelLoaded: Boolean
     suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String
+    /** Neural engines understand the request themselves; the rule-based engine returns null. */
+    suspend fun plan(userText: String): Plan? = null
 }
 
-/** Always available fallback. Does not claim to be a language model. */
+/** Fallback used only when no model is installed (or loading failed). */
 class RuleBasedEngine : LlmEngine {
-    override val name = "Rule-based (no language model installed)"
+    override val name = "No language model installed (basic commands only)"
     override val isNeuralModelLoaded = false
 
-    override suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String {
-        val answer = Replies.forIntent(IntentParser.parse(userText), lang)
-        return answer
-    }
+    override suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String =
+        Replies.forIntent(IntentParser.parse(userText), lang)
 }
 
 object Replies {
@@ -26,23 +26,12 @@ object Replies {
     }
 
     fun forIntent(i: Intent, lang: Lang): String = when (i) {
-        is Intent.OpenApp -> pick(lang, "Opening ${i.app}.", "${i.app} khol raha hoon.", "${i.app} खोल रहा हूँ।")
-        is Intent.Call -> pick(lang, "Ready to call ${i.contact}. Please confirm.", "${i.contact} ko call lagane ke liye confirm karein.", "${i.contact} को कॉल करने के लिए पुष्टि करें।")
-        is Intent.SetReminder -> pick(lang, "Setting a reminder: ${i.text}.", "Reminder laga raha hoon: ${i.text}.", "रिमाइंडर लगा रहा हूँ: ${i.text}।")
-        is Intent.Search -> pick(lang, "Searching for: ${i.query}.", "Dhundh raha hoon: ${i.query}.", "खोज रहा हूँ: ${i.query}।")
-        is Intent.Remember -> pick(lang, "Saving that.", "Yeh save kar raha hoon.", "यह सहेज रहा हूँ।")
-        is Intent.Recall -> pick(lang, "Looking through memory.", "Memory mein dekh raha hoon.", "स्मृति में देख रहा हूँ।")
-        is Intent.WhatsAppDraft -> pick(lang, "Preparing a WhatsApp draft.", "WhatsApp draft bana raha hoon.", "WhatsApp ड्राफ़्ट बना रहा हूँ।")
-        is Intent.ReadNotifications -> pick(lang, "Checking notifications.", "Notifications dekh raha hoon.", "सूचनाएँ देख रहा हूँ।")
-        Intent.ReadEmail -> pick(lang, "Checking email.", "Email dekh raha hoon.", "ईमेल देख रहा हूँ।")
-        Intent.AskTime -> pick(lang, "Checking the time.", "Time dekh raha hoon.", "समय देख रहा हूँ।")
-        Intent.AskBattery -> pick(lang, "Checking the battery.", "Battery dekh raha hoon.", "बैटरी देख रहा हूँ।")
-        Intent.ListTasks -> pick(lang, "Fetching your tasks.", "Aapke tasks la raha hoon.", "आपके कार्य ला रहा हूँ।")
         is Intent.Chat -> pick(
             lang,
-            "I can't hold a free conversation yet: no language model is installed on this phone. I can still open apps, set reminders, call, and search.",
-            "Abhi free baat-cheet nahi kar sakta: is phone mein koi language model installed nahi hai. Main apps khol sakta hoon, reminder laga sakta hoon, call aur search kar sakta hoon.",
-            "अभी सामान्य बातचीत नहीं कर सकता: इस फ़ोन में कोई भाषा मॉडल नहीं है। मैं ऐप खोल सकता हूँ, रिमाइंडर लगा सकता हूँ, कॉल और खोज कर सकता हूँ।",
+            "I can't chat freely yet: no language model is installed. Open Models & downloads to install one.",
+            "Abhi free baat nahi kar sakta: koi language model installed nahi hai. Models & downloads mein jaakar install karein.",
+            "अभी सामान्य बातचीत नहीं कर सकता: कोई भाषा मॉडल नहीं है। Models & downloads में जाकर इंस्टॉल करें।",
         )
+        else -> pick(lang, "Working on it.", "Kar raha hoon.", "कर रहा हूँ।")
     }
 }

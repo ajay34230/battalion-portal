@@ -37,7 +37,11 @@ import com.vision.assistant.ai.AgentReply
 import com.vision.assistant.ai.Lang
 import com.vision.assistant.ai.Orchestrator
 import com.vision.assistant.core.NetworkMonitor
+import com.vision.assistant.core.Downloads
 import com.vision.assistant.voice.Speaker
+import com.vision.assistant.voice.VoskInput
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.vision.assistant.voice.SpeechInput
 import kotlinx.coroutines.launch
 
@@ -48,6 +52,9 @@ fun ChatScreen(app: VisionApp, back: () -> Unit) {
     val orchestrator = remember { Orchestrator(app) }
     val speaker = remember { Speaker(ctx) }
     val stt = remember { SpeechInput(ctx) }
+    val mgr = remember { Downloads.manager(app) }
+    var vosk by remember { mutableStateOf<VoskInput?>(null) }
+    val engineLabel by app.engines.label.collectAsState()
     val messages by app.database.chat().all().collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
 
@@ -59,7 +66,8 @@ fun ChatScreen(app: VisionApp, back: () -> Unit) {
     var pendingPermission by remember { mutableStateOf<String?>(null) }
     var listening by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) { onDispose { speaker.shutdown(); stt.stop() } }
+    LaunchedEffect(Unit) { app.engines.current() }
+    DisposableEffect(Unit) { onDispose { speaker.shutdown(); stt.stop(); vosk?.release() } }
     LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1) }
 
     fun deliver(r: AgentReply) {
@@ -89,6 +97,18 @@ fun ChatScreen(app: VisionApp, back: () -> Unit) {
             micLauncher.launch(Manifest.permission.RECORD_AUDIO); return
         }
         listening = true; status = "Listening…"; speaker.stop()
+        val voskDir = mgr.voskDir(if (hindiMic) "vosk-small-hi" else "vosk-small-en-us")
+        if (voskDir != null) {
+            scope.launch {
+                vosk?.release()
+                val v = VoskInput(voskDir)
+                vosk = v
+                val ok = withContext(Dispatchers.IO) { try { v.prepare(); true } catch (t: Throwable) { status = "Offline speech model failed: ${t.message}"; false } }
+                if (!ok) { listening = false; return@launch }
+                v.listen(onText = { listening = false; status = ""; send(it) }, onError = { listening = false; status = it })
+            }
+            return
+        }
         stt.listen(
             Speaker.recognitionTag(hindiMic), preferOffline = !NetworkMonitor.isOnline(ctx),
             onText = { listening = false; status = ""; send(it) },
@@ -99,7 +119,7 @@ fun ChatScreen(app: VisionApp, back: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("VISION", style = MaterialTheme.typography.titleLarge)
         Text(
-            "${orchestrator.engineName} · ${app.deviceProfile.tier} · ${if (NetworkMonitor.isOnline(ctx)) "online" else "offline"}",
+            "$engineLabel · ${app.deviceProfile.tier} · ${if (NetworkMonitor.isOnline(ctx)) "online" else "offline"}",
             style = MaterialTheme.typography.bodySmall,
         )
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -137,7 +157,7 @@ fun ChatScreen(app: VisionApp, back: () -> Unit) {
             Button(onClick = { send(input) }) { Text("Send") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { if (listening) { stt.stop(); listening = false; status = "" } else startListening() }) { Text(if (listening) "Stop listening" else "Speak") }
+            Button(onClick = { if (listening) { stt.stop(); vosk?.stop(); listening = false; status = "" } else startListening() }) { Text(if (listening) "Stop listening" else "Speak") }
             OutlinedButton(onClick = { speaker.stop() }) { Text("Stop talking") }
             OutlinedButton(onClick = back) { Text("Back") }
         }
