@@ -1,0 +1,40 @@
+name: VISION resolve resource hashes
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hashes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hugging Face LFS hashes, sizes and gating check
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, subprocess
+          specs = [
+            ("litert-community/Qwen3-0.6B", "Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm"),
+            ("litert-community/Qwen3-0.6B", "Qwen3-0.6B.litertlm"),
+            ("litert-community/Qwen3-4B", "qwen3_4b_mixed_int4.litertlm"),
+          ]
+          for repo, fn in specs:
+            try:
+              tree = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main"))
+              it = next((x for x in tree if x.get("path") == fn), None)
+              lfs = (it or {}).get("lfs") or {}
+              code = subprocess.run(["curl","-sIL","-o","/dev/null","-w","%{http_code}",f"https://huggingface.co/{repo}/resolve/main/{fn}"],capture_output=True,text=True).stdout
+              print(f"::notice title=HASH::{repo} {fn} size={lfs.get('size')} sha256={lfs.get('oid')} anonymous_http={code}")
+            except Exception as e:
+              print(f"::notice title=HASH::{repo} {fn} ERROR {e}")
+          PY
+      - name: Maven versions
+        run: |
+          for u in https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/maven-metadata.xml https://repo1.maven.org/maven2/com/alphacephei/vosk-android/maven-metadata.xml https://repo1.maven.org/maven2/net/java/dev/jna/jna/maven-metadata.xml; do
+            v=$(curl -sSf "$u" | tr -d '\n ' | grep -o '<release>[^<]*\|<latest>[^<]*\|<version>[^<]*' | tail -6 | tr '\n' ' ')
+            echo "::notice title=MAVEN::$u $v"
+          done
+      - name: Vosk model hashes (official host, downloaded over HTTPS)
+        run: |
+          for m in vosk-model-small-en-us-0.15 vosk-model-small-hi-0.22; do
+            curl -sSfL -o "$m.zip" "https://alphacephei.com/vosk/models/$m.zip" || { echo "::notice title=VOSK::$m DOWNLOAD FAILED"; continue; }
+            echo "::notice title=VOSK::$m size=$(wc -c < $m.zip) sha256=$(sha256sum $m.zip | cut -d' ' -f1)"
+          done
