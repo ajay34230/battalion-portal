@@ -30,6 +30,8 @@ object Replies {
         is Intent.Call -> pick(lang, "Ready to call ${i.contact}. Please confirm.", "${i.contact} ko call lagane ke liye confirm karein.", "${i.contact} को कॉल करने के लिए पुष्टि करें।")
         is Intent.SetReminder -> pick(lang, "Setting a reminder: ${i.text}.", "Reminder laga raha hoon: ${i.text}.", "रिमाइंडर लगा रहा हूँ: ${i.text}।")
         is Intent.Search -> pick(lang, "Searching for: ${i.query}.", "Dhundh raha hoon: ${i.query}.", "खोज रहा हूँ: ${i.query}।")
+        is Intent.Remember -> pick(lang, "Saving that.", "Yeh save kar raha hoon.", "यह सहेज रहा हूँ।")
+        is Intent.Recall -> pick(lang, "Looking through memory.", "Memory mein dekh raha hoon.", "स्मृति में देख रहा हूँ।")
         Intent.AskTime -> pick(lang, "Checking the time.", "Time dekh raha hoon.", "समय देख रहा हूँ।")
         Intent.AskBattery -> pick(lang, "Checking the battery.", "Battery dekh raha hoon.", "बैटरी देख रहा हूँ।")
         Intent.ListTasks -> pick(lang, "Fetching your tasks.", "Aapke tasks la raha hoon.", "आपके कार्य ला रहा हूँ।")

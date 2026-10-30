@@ -38,10 +38,14 @@ fun HomeScreen(profile: DeviceProfile, go: (String) -> Unit) {
         Text("Personal AI agent — foundation build. Device tier: ${profile.tier}")
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
-                Text("AI engine: none installed yet")
-                Text("Voice: not enabled yet")
+                Text("AI engine: rule-based (no language model installed)")
+                Text("Voice: push-to-talk in Chat (wake word not built)")
             }
         }
+        Button(onClick = { go(Routes.CHAT) }, modifier = Modifier.fillMaxWidth()) { Text("Talk to VISION") }
+        Button(onClick = { go(Routes.TASKS) }, modifier = Modifier.fillMaxWidth()) { Text("Tasks & reminders") }
+        Button(onClick = { go(Routes.MEMORY) }, modifier = Modifier.fillMaxWidth()) { Text("Memory") }
+        Button(onClick = { go(Routes.MODELS) }, modifier = Modifier.fillMaxWidth()) { Text("Models & downloads") }
         Button(onClick = { go(Routes.DEVICE) }, modifier = Modifier.fillMaxWidth()) { Text("This device") }
         Button(onClick = { go(Routes.PERMISSIONS) }, modifier = Modifier.fillMaxWidth()) { Text("Permissions") }
     }

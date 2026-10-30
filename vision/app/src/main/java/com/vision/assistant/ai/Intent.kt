@@ -7,6 +7,8 @@ sealed interface Intent {
     data class SetReminder(val text: String, val time: ParsedTime?, val repeatWeekday: String?) : Intent
     data class Call(val contact: String) : Intent
     data class Search(val query: String) : Intent
+    data class Remember(val text: String) : Intent
+    data class Recall(val query: String) : Intent
     data object AskTime : Intent
     data object AskBattery : Intent
     data object ListTasks : Intent
@@ -29,6 +31,9 @@ object IntentParser {
         val t = wake.replace(raw, "").trim().trimEnd('.', '!', '?', '।')
         val l = t.lowercase()
         if (l.isEmpty()) return Intent.Chat(raw)
+
+        Regex("^(?:remember|note|yaad rakho|yaad rakhna|note kar)\\s+(?:that\\s+|ki\\s+)?(.+)$").find(l)?.let { return Intent.Remember(it.groupValues[1].trim()) }
+        Regex("^(?:what do you remember about|recall|mujhe yaad dilao|kya yaad hai)\\s+(.+)$").find(l)?.let { return Intent.Recall(it.groupValues[1].trim()) }
 
         if (Regex("remind|reminder|yaad dila|utha dena|utha do|jaga dena|alarm|याद दिला|उठा").containsMatchIn(l)) {
             val repeat = if (Regex("every|har ").containsMatchIn(l)) weekdays.entries.firstOrNull { l.contains(it.key) }?.value else null
