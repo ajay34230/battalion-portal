@@ -1,5 +1,10 @@
 package com.vision.assistant.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,9 +28,15 @@ object Routes {
 fun VisionNav(app: VisionApp) {
     val nav = rememberNavController()
     val back = { nav.popBackStack(); Unit }
-    NavHost(navController = nav, startDestination = Routes.HOME) {
-        composable(Routes.HOME) { HomeScreen(app.deviceProfile) { nav.navigate(it) } }
-        composable(Routes.CHAT) { ChatScreen(app, back) }
+    NavHost(
+        navController = nav, startDestination = Routes.HOME,
+        enterTransition = { fadeIn(tween(700)) + scaleIn(tween(700), initialScale = 0.94f) },
+        exitTransition = { fadeOut(tween(450)) + scaleOut(tween(450), targetScale = 1.04f) },
+        popEnterTransition = { fadeIn(tween(700)) + scaleIn(tween(700), initialScale = 1.04f) },
+        popExitTransition = { fadeOut(tween(450)) + scaleOut(tween(450), targetScale = 0.94f) },
+    ) {
+        composable(Routes.HOME) { HomeScreen(app) { nav.navigate(it) } }
+        composable(Routes.CHAT) { AiScreen(app, overlay = false, autoListen = false, onClose = back) }
         composable(Routes.TASKS) { TasksScreen(app, back) }
         composable(Routes.MEMORY) { MemoryScreen(app, back) }
         composable(Routes.MODELS) { ModelsScreen(app, back) }

@@ -16,7 +16,7 @@ class SpeechInput(private val ctx: Context) {
     private var recognizer: SpeechRecognizer? = null
     val available: Boolean get() = SpeechRecognizer.isRecognitionAvailable(ctx)
 
-    fun listen(localeTag: String, preferOffline: Boolean, onText: (String) -> Unit, onError: (String) -> Unit) {
+    fun listen(localeTag: String, preferOffline: Boolean, onText: (String) -> Unit, onError: (String) -> Unit, onLevel: (Float) -> Unit = {}) {
         if (!available) { onError("No speech recogniser is installed on this device."); return }
         stop()
         val r = SpeechRecognizer.createSpeechRecognizer(ctx)
@@ -29,7 +29,7 @@ class SpeechInput(private val ctx: Context) {
             override fun onError(error: Int) { onError("Speech recognition error ($error).") }
             override fun onReadyForSpeech(params: Bundle?) {}
             override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) { onLevel(((rmsdB + 2f) / 12f).coerceIn(0f, 1f)) }
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {}
             override fun onPartialResults(partialResults: Bundle?) {}

@@ -22,7 +22,7 @@ class VisionNotificationListener : NotificationListenerService() {
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
-        val sensitive = SensitiveText.isSensitive("$title $text") || Untrusted.looksLikeInjection(text)
+        val sensitive = (SensitiveText.isSensitive("$title $text") && !com.vision.assistant.privacy.LockPrefs.load(this).readSensitiveAloud) || Untrusted.looksLikeInjection(text)
         val app = application as VisionApp
         scope.launch {
             app.database.notifications().insert(

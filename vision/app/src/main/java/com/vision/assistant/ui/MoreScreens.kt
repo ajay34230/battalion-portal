@@ -33,6 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.vision.assistant.VisionApp
 import com.vision.assistant.research.Prefs
+import com.vision.assistant.privacy.LockPrefs
+import com.vision.assistant.privacy.LockSettings
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import com.vision.assistant.service.VoiceService
 import com.vision.assistant.termux.CommandPolicy
 import com.vision.assistant.termux.TermuxGateway
@@ -43,24 +47,57 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
+private fun ToggleRow(title: String, sub: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().glass(16).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(title)
+            if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = VisionColors.Muted)
+        }
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+    }
+}
+
+@Composable
 fun SettingsScreen(app: VisionApp, back: () -> Unit) {
     val ctx = LocalContext.current
     var searx by remember { mutableStateOf(Prefs.searxngUrl(ctx)) }
     var msg by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    var lock by remember { mutableStateOf(LockPrefs.load(ctx)) }
+    fun upd(n: LockSettings) { lock = n; LockPrefs.save(ctx, n) }
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Settings", style = MaterialTheme.typography.headlineSmall)
-        Text("Search server (optional). Leave empty to use Wikipedia. A SearXNG address must have JSON output enabled.", style = MaterialTheme.typography.bodySmall)
-        OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
-        Button(onClick = { Prefs.setSearxngUrl(ctx, searx); msg = "Saved." }) { Text("Save") }
-        Text("Voice session", style = MaterialTheme.typography.titleMedium)
-        Text("Shows a notification with a Speak button (and a Quick Settings tile “Ask VISION”). It listens only after you tap Speak.", style = MaterialTheme.typography.bodySmall)
+
+        Text("Calling VISION", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        Text("VISION opens as a glowing sheet over any screen. Ways to call it: the Quick Settings tile “Ask VISION”, the Speak button in the voice-session notification, or set VISION as your Digital assistant app (Android Settings → Apps → Default apps) so a power-button or home-gesture long press opens it. A hands-free “Hey Vision” wake word is not built yet.", style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { ctx.startActivity(Intent(ctx, com.vision.assistant.AssistActivity::class.java)) }) { Text("Try it now") }
+            OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }) { Text("Default assistant") }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
                 if (ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) msg = "Grant microphone permission first (Permissions screen)."
-                else { ContextCompat.startForegroundService(ctx, Intent(ctx, VoiceService::class.java)); msg = "Voice session started." }
-            }) { Text("Start") }
-            OutlinedButton(onClick = { ctx.startService(Intent(ctx, VoiceService::class.java).setAction(VoiceService.ACTION_STOP)); msg = "Stopped." }) { Text("Stop") }
+                else { ContextCompat.startForegroundService(ctx, Intent(ctx, VoiceService::class.java)); msg = "Voice-session notification is on." }
+            }) { Text("Show notification") }
+            OutlinedButton(onClick = { ctx.startService(Intent(ctx, VoiceService::class.java).setAction(VoiceService.ACTION_STOP)); msg = "Notification removed." }) { Text("Remove") }
         }
+
+        Text("Lock screen", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        Text("No limits are on by default. VISION never bypasses your PIN, pattern or fingerprint: apps and calls make Android ask you to unlock first.", style = MaterialTheme.typography.bodySmall)
+        ToggleRow("Show VISION over the lock screen", "Turns the screen on and shows the assistant even when locked", lock.overLockScreen) { upd(lock.copy(overLockScreen = it)) }
+        ToggleRow("Limit what VISION does when locked", "Off = no limits. Turn on to pick what is allowed.", lock.limitsEnabled) { upd(lock.copy(limitsEnabled = it)) }
+        if (lock.limitsEnabled) {
+            ToggleRow("Open apps", "", lock.allowApps) { upd(lock.copy(allowApps = it)) }
+            ToggleRow("Calls", "", lock.allowCalls) { upd(lock.copy(allowCalls = it)) }
+            ToggleRow("Messages (WhatsApp drafts)", "", lock.allowMessages) { upd(lock.copy(allowMessages = it)) }
+            ToggleRow("Read notifications & email", "", lock.allowNotifications) { upd(lock.copy(allowNotifications = it)) }
+            ToggleRow("Tasks & memory", "", lock.allowPersonalData) { upd(lock.copy(allowPersonalData = it)) }
+        }
+        ToggleRow("Read OTP / bank messages aloud", "Off by default so codes are not spoken in public. Applies to newly received notifications.", lock.readSensitiveAloud) { upd(lock.copy(readSensitiveAloud = it)) }
+
+        Text("Search", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        Text("Optional SearXNG server (must have JSON output enabled). Empty = Wikipedia.", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
+        Button(onClick = { Prefs.setSearxngUrl(ctx, searx); msg = "Saved." }) { Text("Save") }
         if (msg.isNotBlank()) Text(msg)
         OutlinedButton(onClick = back) { Text("Back") }
     }

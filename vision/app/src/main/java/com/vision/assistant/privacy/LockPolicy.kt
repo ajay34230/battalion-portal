@@ -1,18 +1,52 @@
 package com.vision.assistant.privacy
 
+import android.content.Context
 import com.vision.assistant.ai.Intent
 
-/** What VISION may do while the phone is locked. It never bypasses the lock screen: it only refuses. */
-object LockPolicy {
-    fun allowedWhenLocked(i: Intent): Boolean = when (i) {
-        Intent.AskTime, Intent.AskBattery -> true
-        is Intent.SetReminder, is Intent.Remember -> true
-        is Intent.Search -> true
-        is Intent.Chat -> true
-        Intent.ListTasks, is Intent.Recall -> false      // may reveal personal details
-        is Intent.OpenApp, is Intent.Call -> false       // needs an unlocked device
-        else -> false                                      // notifications, mail, WhatsApp, anything new: deny by default
+/** All limits are OFF by default: the owner adds limits in Settings. Android's own lock screen is never bypassed. */
+data class LockSettings(
+    val overLockScreen: Boolean = true,
+    val limitsEnabled: Boolean = false,
+    val allowApps: Boolean = true,
+    val allowCalls: Boolean = true,
+    val allowMessages: Boolean = true,
+    val allowNotifications: Boolean = true,
+    val allowPersonalData: Boolean = true,
+    val readSensitiveAloud: Boolean = false,
+)
+
+object LockPrefs {
+    private fun p(ctx: Context) = ctx.getSharedPreferences("vision_lock", Context.MODE_PRIVATE)
+    fun load(ctx: Context): LockSettings = p(ctx).let {
+        val d = LockSettings()
+        LockSettings(
+            it.getBoolean("overLock", d.overLockScreen), it.getBoolean("limits", d.limitsEnabled),
+            it.getBoolean("apps", d.allowApps), it.getBoolean("calls", d.allowCalls), it.getBoolean("messages", d.allowMessages),
+            it.getBoolean("notifs", d.allowNotifications), it.getBoolean("personal", d.allowPersonalData), it.getBoolean("sensitive", d.readSensitiveAloud),
+        )
     }
+    fun save(ctx: Context, s: LockSettings) {
+        p(ctx).edit().putBoolean("overLock", s.overLockScreen).putBoolean("limits", s.limitsEnabled).putBoolean("apps", s.allowApps)
+            .putBoolean("calls", s.allowCalls).putBoolean("messages", s.allowMessages).putBoolean("notifs", s.allowNotifications)
+            .putBoolean("personal", s.allowPersonalData).putBoolean("sensitive", s.readSensitiveAloud).apply()
+    }
+}
+
+object LockPolicy {
+    fun allowedWhenLocked(i: Intent, s: LockSettings = LockSettings()): Boolean {
+        if (!s.limitsEnabled) return true
+        return when (i) {
+            is Intent.OpenApp -> s.allowApps
+            is Intent.Call -> s.allowCalls
+            is Intent.WhatsAppDraft -> s.allowMessages
+            is Intent.ReadNotifications, Intent.ReadEmail -> s.allowNotifications
+            Intent.ListTasks, is Intent.Recall, is Intent.Remember -> s.allowPersonalData
+            else -> true
+        }
+    }
+
+    /** Android shows other apps / the dialer only on an unlocked phone, so the owner is asked to unlock (never bypassed). */
+    fun needsUnlock(i: Intent) = i is Intent.OpenApp || i is Intent.Call || i is Intent.WhatsAppDraft
 }
 
 object SensitiveText {

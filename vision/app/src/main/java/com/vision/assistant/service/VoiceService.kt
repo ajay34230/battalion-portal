@@ -72,7 +72,7 @@ class VoiceService : Service() {
         return NotificationCompat.Builder(this, "vision_voice")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now).setContentTitle("VISION is ready").setContentText("Tap Speak to talk")
             .setOngoing(true).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .addAction(0, "Speak", action(ACTION_SPEAK)).addAction(0, "Stop", action(ACTION_STOP)).build()
+            .addAction(0, "Speak", PendingIntent.getActivity(this, 7, Intent(this, com.vision.assistant.AssistActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)).addAction(0, "Stop", action(ACTION_STOP)).build()
     }
 
     override fun onDestroy() { scope.cancel(); stt.stop(); speaker.shutdown(); super.onDestroy() }
@@ -86,8 +86,8 @@ class VoiceService : Service() {
 
 class AskVisionTile : TileService() {
     override fun onClick() {
-        val i = Intent(this, VoiceService::class.java).setAction(VoiceService.ACTION_SPEAK)
-        // Starting a microphone foreground service from a tile is allowed because the user just tapped it.
-        ContextCompat.startForegroundService(this, i)
+        val i = Intent(this, com.vision.assistant.AssistActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_IMMUTABLE))
+        else @Suppress("DEPRECATION") startActivityAndCollapse(i)
     }
 }

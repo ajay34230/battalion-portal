@@ -12,12 +12,13 @@ data class AgentReply(
     val lang: Lang,
     val confirm: ToolResult.NeedsConfirmation? = null,
     val needsPermission: String? = null,
+    val needsUnlock: Boolean = false,
 )
 
 class Orchestrator(private val app: VisionApp) {
     private val tools = ToolRegistry(app)
 
-    suspend fun handle(userText: String, locked: Boolean = false): AgentReply {
+    suspend fun handle(userText: String, locked: Boolean = false, settings: com.vision.assistant.privacy.LockSettings = com.vision.assistant.privacy.LockSettings()): AgentReply {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
@@ -27,8 +28,10 @@ class Orchestrator(private val app: VisionApp) {
         val plan = try { engine.plan(userText) } catch (_: Throwable) { null }
         val intent = plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: IntentParser.parse(userText)
 
-        val reply = if (locked && !LockPolicy.allowedWhenLocked(intent)) {
-            AgentReply(Say("Please unlock your phone first.", "Pehle phone unlock kijiye.", "पहले फ़ोन अनलॉक कीजिए।").`in`(lang), lang)
+        val reply = if (locked && !LockPolicy.allowedWhenLocked(intent, settings)) {
+            AgentReply(Say("That is turned off while the phone is locked (see Settings).", "Locked phone par yeh band hai (Settings dekhein).", "फ़ोन लॉक होने पर यह बंद है (सेटिंग्स देखें)।").`in`(lang), lang)
+        } else if (locked && LockPolicy.needsUnlock(intent)) {
+            AgentReply(Say("Unlock your phone to continue.", "Aage badhne ke liye phone unlock kijiye.", "आगे बढ़ने के लिए फ़ोन अनलॉक कीजिए।").`in`(lang), lang, needsUnlock = true)
         } else if (intent is Intent.Chat) {
             val text = plan?.reply ?: run {
                 val history = db.chat().recent(10).reversed().dropLast(1).map { ChatTurn(it.role, it.text) }

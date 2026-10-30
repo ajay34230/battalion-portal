@@ -30,27 +30,72 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.vision.assistant.core.DeviceProfile
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import com.vision.assistant.ai.OrbState
+import com.vision.assistant.VisionApp
+
+private data class Tile(val icon: String, val title: String, val sub: String, val route: String)
 
 @Composable
-fun HomeScreen(profile: DeviceProfile, go: (String) -> Unit) {
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("VISION", style = MaterialTheme.typography.headlineLarge)
-        Text("Personal AI agent — foundation build. Device tier: ${profile.tier}")
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp)) {
-                Text("AI: runs a downloaded Qwen3 model on this phone (install it under Models & downloads)")
-                Text("Voice: push-to-talk in Chat; Speak notification in Settings")
+fun HomeScreen(app: VisionApp, go: (String) -> Unit) {
+    val profile = app.deviceProfile
+    val engineLabel by app.engines.label.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) { app.engines.current() }
+    val tiles = listOf(
+        Tile("💬", "Talk", "Voice & chat", Routes.CHAT), Tile("⏰", "Tasks", "Reminders", Routes.TASKS),
+        Tile("🧠", "Memory", "What I remember", Routes.MEMORY), Tile("⬇", "Models", "AI & voice downloads", Routes.MODELS),
+        Tile("⌨", "Termux", "Safe commands", Routes.TERMUX), Tile("🛡", "Privacy", "Data & action log", Routes.PRIVACY),
+        Tile("⚙", "Settings", "Lock screen & more", Routes.SETTINGS), Tile("📱", "This phone", "Tier ${profile.tier}", Routes.DEVICE),
+        Tile("🔑", "Permissions", "Control access", Routes.PERMISSIONS),
+    )
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.height(8.dp))
+                Text("V I S I O N", fontSize = 30.sp, fontWeight = FontWeight.Light, color = VisionColors.Cyan,
+                    style = MaterialTheme.typography.headlineLarge.copy(shadow = Shadow(VisionColors.Cyan, blurRadius = 28f)))
+                Text(engineLabel, color = VisionColors.Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(10.dp))
+                JarvisOrb(OrbState.IDLE, 0f, Modifier.size(270.dp).clip(CircleShape).clickable { go(Routes.CHAT) })
+                Text("Tap the orb to talk", color = VisionColors.Muted, fontSize = 12.sp, letterSpacing = 3.sp)
+                Spacer(Modifier.height(8.dp))
             }
         }
-        Button(onClick = { go(Routes.CHAT) }, modifier = Modifier.fillMaxWidth()) { Text("Talk to VISION") }
-        Button(onClick = { go(Routes.TASKS) }, modifier = Modifier.fillMaxWidth()) { Text("Tasks & reminders") }
-        Button(onClick = { go(Routes.MEMORY) }, modifier = Modifier.fillMaxWidth()) { Text("Memory") }
-        Button(onClick = { go(Routes.MODELS) }, modifier = Modifier.fillMaxWidth()) { Text("Models & downloads") }
-        Button(onClick = { go(Routes.DEVICE) }, modifier = Modifier.fillMaxWidth()) { Text("This device") }
-        Button(onClick = { go(Routes.TERMUX) }, modifier = Modifier.fillMaxWidth()) { Text("Termux") }
-        Button(onClick = { go(Routes.PRIVACY) }, modifier = Modifier.fillMaxWidth()) { Text("Privacy centre") }
-        Button(onClick = { go(Routes.SETTINGS) }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
-        Button(onClick = { go(Routes.PERMISSIONS) }, modifier = Modifier.fillMaxWidth()) { Text("Permissions") }
+        itemsIndexed(tiles) { index, t ->
+            var shown by remember { mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(150L + index * 110L); shown = true }
+            AnimatedVisibility(shown, enter = fadeIn(tween(900)) + slideInVertically(tween(900)) { it / 4 }) {
+                Column(Modifier.fillMaxWidth().glass(22).clickable { go(t.route) }.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(t.icon, fontSize = 26.sp)
+                    Text(t.title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                    Text(t.sub, fontSize = 12.sp, color = VisionColors.Muted)
+                }
+            }
+        }
     }
 }
 

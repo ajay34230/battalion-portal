@@ -1,3 +1,14 @@
 <resources>
-    <style name="Theme.Vision" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Vision" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF040A14</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <style name="Theme.Vision.Overlay" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>
