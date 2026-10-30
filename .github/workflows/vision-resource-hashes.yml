@@ -41,3 +41,15 @@ jobs:
             curl -sSfL -o "$m.zip" "https://alphacephei.com/vosk/models/$m.zip" || { echo "::notice title=VOSK::$m DOWNLOAD FAILED"; continue; }
             echo "::notice title=VOSK::$m size=$(wc -c < $m.zip) sha256=$(sha256sum $m.zip | cut -d' ' -f1)"
           done
+      - name: Gradle plugin versions
+        run: |
+          for u in \
+            https://plugins.gradle.org/m2/org/jetbrains/kotlin/plugin/compose/org.jetbrains.kotlin.plugin.compose.gradle.plugin/maven-metadata.xml \
+            https://plugins.gradle.org/m2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/maven-metadata.xml \
+            https://dl.google.com/android/maven2/com/android/tools/build/gradle/maven-metadata.xml \
+            https://dl.google.com/android/maven2/androidx/room/room-runtime/maven-metadata.xml \
+            https://dl.google.com/android/maven2/androidx/compose/compose-bom/maven-metadata.xml \
+            https://dl.google.com/android/maven2/androidx/work/work-runtime-ktx/maven-metadata.xml ; do
+            v=$(curl -sSf "$u" | tr -d '\n ' | grep -o '<version>[^<]*' | sed 's/<version>//' | grep -v -E 'alpha|beta|rc|RC|dev|-M' | tail -4 | tr '\n' ' ')
+            echo "::notice title=PLUGINS::$(basename $(dirname $u)) $v"
+          done
