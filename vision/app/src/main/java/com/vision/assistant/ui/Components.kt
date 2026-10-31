@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+val LocalOpenSettings = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
+
+/** Round settings button shown at the top right of every main screen. */
+@Composable
+fun GearButton() {
+    val open = LocalOpenSettings.current
+    Box(Modifier.size(40.dp).glass(20).clickable { open() }, contentAlignment = Alignment.Center) { Text("⚙", fontSize = 18.sp, color = VisionColors.Cyan) }
+}
+
+/** Heading that starts a group of related settings. */
+@Composable
+fun GroupHeader(text: String, sub: String = "") {
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp)) {
+        Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = VisionColors.Text)
+        if (sub.isNotBlank()) Text(sub, fontSize = 12.sp, color = VisionColors.Muted)
+        Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(1.dp).background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(VisionColors.Cyan.copy(alpha = 0.45f), Color.Transparent))))
+    }
+}
+
 /** Standard screen layout: one title, optional subtitle and action, consistent padding. No per-screen Back buttons (the system back and bottom bar handle that). */
 @Composable
 fun ScreenFrame(title: String, subtitle: String = "", action: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
@@ -37,6 +57,7 @@ fun ScreenFrame(title: String, subtitle: String = "", action: (@Composable () ->
                 if (subtitle.isNotBlank()) Text(subtitle, fontSize = 13.sp, color = VisionColors.Muted)
             }
             action?.invoke()
+            if (title != "Settings") { if (action != null) Spacer(Modifier.padding(start = 8.dp)); GearButton() }
         }
         content()
     }

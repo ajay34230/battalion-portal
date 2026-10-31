@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 object VisionColors {
     val Bg = Color(0xFF040A14)
@@ -42,9 +43,24 @@ object VisionColors {
     )
 }
 
+val VisionShapes = androidx.compose.material3.Shapes(
+    extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp), extraLarge = RoundedCornerShape(28.dp),
+)
+
+private val base = androidx.compose.material3.Typography()
+val VisionType = androidx.compose.material3.Typography(
+    titleLarge = base.titleLarge.copy(fontSize = 24.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, letterSpacing = (-0.2).sp),
+    titleMedium = base.titleMedium.copy(fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = 0.1.sp),
+    bodyLarge = base.bodyLarge.copy(fontSize = 15.sp, lineHeight = 22.sp),
+    bodyMedium = base.bodyMedium.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall = base.bodySmall.copy(fontSize = 12.sp, lineHeight = 17.sp),
+    labelLarge = base.labelLarge.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = 0.2.sp),
+)
+
 @Composable
 fun VisionTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = VisionColors.scheme) {
+    MaterialTheme(colorScheme = VisionColors.scheme, shapes = VisionShapes, typography = VisionType) {
         Surface(color = Color.Transparent, contentColor = VisionColors.Text, modifier = Modifier.fillMaxSize()) { content() }
     }
 }
@@ -69,6 +85,7 @@ fun AuroraBackground(modifier: Modifier = Modifier, content: @Composable BoxScop
 fun Modifier.glass(radius: Int = 22): Modifier {
     val shape = RoundedCornerShape(radius.dp)
     return this.clip(shape)
-        .background(Brush.verticalGradient(listOf(Color(0x2600E5FF), Color(0x0F2979FF))))
-        .border(1.dp, Color(0x4400E5FF), shape)
+        .background(Color(0xB30A1422))
+        .background(Brush.verticalGradient(listOf(Color(0x1A00E5FF), Color(0x042979FF))))
+        .border(1.dp, Brush.linearGradient(listOf(Color(0x5500E5FF), Color(0x1A8E5CFF), Color(0x3300E5FF))), shape)
 }

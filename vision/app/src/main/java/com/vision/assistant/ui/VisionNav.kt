@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.drawBehind
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
@@ -61,13 +63,14 @@ fun VisionNav(app: VisionApp) {
     val route = entry?.destination?.route ?: Routes.HOME
     val tabRoute = if (route in secondary) Routes.MORE else route
     fun goTab(r: String) { nav.navigate(r) { popUpTo(Routes.HOME) { saveState = true }; launchSingleTop = true; restoreState = true } }
+    androidx.compose.runtime.CompositionLocalProvider(LocalOpenSettings provides { nav.navigate(Routes.SETTINGS) { launchSingleTop = true } }) {
     androidx.compose.material3.Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            androidx.compose.material3.NavigationBar(containerColor = Color(0xE6070F1C), contentColor = VisionColors.Text) {
+            androidx.compose.material3.NavigationBar(containerColor = Color(0xF2070F1C), contentColor = VisionColors.Text, tonalElevation = 0.dp, modifier = Modifier.drawBehind { drawLine(Color(0x3300E5FF), androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx()) }) {
                 for (t in tabs) NavigationBarItem(
                     selected = tabRoute == t.route, onClick = { if (t.route == Routes.CHAT) pendingSay = null; goTab(t.route) },
-                    icon = { androidx.compose.material3.Text(t.icon, fontSize = 20.sp) },
+                    icon = { androidx.compose.material3.Text(t.icon, fontSize = 21.sp) },
                     label = { androidx.compose.material3.Text(t.label, fontSize = 11.sp) },
                     colors = androidx.compose.material3.NavigationBarItemDefaults.colors(selectedTextColor = VisionColors.Cyan, unselectedTextColor = VisionColors.Muted, indicatorColor = Color(0x3300E5FF)),
                 )
@@ -101,5 +104,6 @@ fun VisionNav(app: VisionApp) {
             }
             Box(Modifier.align(Alignment.TopCenter)) { DownloadBanner(onClick = { nav.navigate(Routes.MODELS) { launchSingleTop = true } }) }
         }
+    }
     }
 }

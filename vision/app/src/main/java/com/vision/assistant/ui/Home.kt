@@ -62,6 +62,8 @@ fun HomeScreen(app: VisionApp, go: (String) -> Unit, say: (String) -> Unit) {
                 Text("V I S I O N", fontSize = 16.sp, fontWeight = FontWeight.Light, color = VisionColors.Cyan, style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(shadow = Shadow(VisionColors.Cyan, blurRadius = 18f)))
                 Text(engineLabel, fontSize = 11.sp, color = VisionColors.Muted, maxLines = 1)
             }
+            Spacer(Modifier.weight(1f))
+            GearButton()
         }
         Spacer(Modifier.height(14.dp))
         VisionAvatar(OrbState.IDLE, 0f, Modifier.size(250.dp).clip(CircleShape).clickable { go(Routes.CHAT) })

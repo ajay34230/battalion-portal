@@ -67,8 +67,9 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
     fun upd(n: LockSettings) { lock = n; LockPrefs.save(ctx, n) }
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ScreenTitle("Settings")
+        Text("Everything about how VISION listens, speaks, searches and behaves on a locked phone.", fontSize = 13.sp, color = VisionColors.Muted)
 
-        Text("Calling VISION", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        GroupHeader("Calling VISION")
         Text("VISION opens as a glowing sheet over any screen. Ways to call it: the Quick Settings tile “Ask VISION”, the Speak button in the voice-session notification, or set VISION as your Digital assistant app (Android Settings → Apps → Default apps) so a power-button or home-gesture long press opens it. A hands-free “Hey Vision” wake word is not built yet.", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { ctx.startActivity(Intent(ctx, com.vision.assistant.AssistActivity::class.java)) }) { Text("Try it now") }
@@ -82,7 +83,7 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
             OutlinedButton(onClick = { ctx.startService(Intent(ctx, VoiceService::class.java).setAction(VoiceService.ACTION_STOP)); msg = "Notification removed." }) { Text("Remove") }
         }
 
-        Text("Lock screen", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        GroupHeader("Lock screen")
         Text("No limits are on by default. VISION never bypasses your PIN, pattern or fingerprint: apps and calls make Android ask you to unlock first.", style = MaterialTheme.typography.bodySmall)
         ToggleRow("Show VISION over the lock screen", "Turns the screen on and shows the assistant even when locked", lock.overLockScreen) { upd(lock.copy(overLockScreen = it)) }
         ToggleRow("Limit what VISION does when locked", "Off = no limits. Turn on to pick what is allowed.", lock.limitsEnabled) { upd(lock.copy(limitsEnabled = it)) }
@@ -95,7 +96,7 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         }
         ToggleRow("Read OTP / bank messages aloud", "Off by default so codes are not spoken in public. Applies to newly received notifications.", lock.readSensitiveAloud) { upd(lock.copy(readSensitiveAloud = it)) }
 
-        Text("Search", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
+        GroupHeader("Search")
         Text("Optional SearXNG server (must have JSON output enabled). Empty = Wikipedia.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
         var wake by remember { mutableStateOf(Prefs.wakeWord(ctx)) }
