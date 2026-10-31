@@ -74,4 +74,7 @@ object TermuxRunner {
         val s = sb.toString()
         return if (s.toByteArray().size > MAX_SCRIPT_BYTES) null else s
     }
+
+    fun requestFor(script: String) = com.vision.assistant.termux.Validation.Ok("bash", listOf("-c", script), sensitive = true, high = true)
+    val homeProjects get() = CommandPolicy.HOME + "/projects"
 }
