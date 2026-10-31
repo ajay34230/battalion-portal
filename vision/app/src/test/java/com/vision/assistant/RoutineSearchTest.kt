@@ -82,3 +82,13 @@ class GmailParseTest {
     @org.junit.Test fun garbageIsNull() = org.junit.Assert.assertNull(com.vision.assistant.finance.Gmail.parseMessage("nope"))
     @org.junit.Test fun explainsClientErrors() = org.junit.Assert.assertTrue(com.vision.assistant.finance.Gmail.explain("10: DEVELOPER_ERROR").contains("GMAIL_SETUP"))
 }
+
+class ModelPlanTest {
+    private fun p(s: String) = com.vision.assistant.ai.PlanParser.parse(s)?.intent
+    @org.junit.Test fun spending() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.Spending("week"), p("""{"intent":"spending","period":"week"}"""))
+    @org.junit.Test fun calendar() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.Calendar(2), p("""{"intent":"calendar","days":2}"""))
+    @org.junit.Test fun event() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.SetEvent("birthday", "Mom", 10, 5, false, "en"), p("""{"intent":"event","kind":"birthday","title":"Mom","month":10,"day":5,"monthly":false}"""))
+    @org.junit.Test fun badEventRejected() = org.junit.Assert.assertNull(p("""{"intent":"event","kind":"birthday","title":"Mom","month":13,"day":5}"""))
+    @org.junit.Test fun routine() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.RunRoutine("morning"), p("""{"intent":"routine","name":"morning"}"""))
+    @org.junit.Test fun searchMode() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.Search("x", "deep"), p("""{"intent":"search","query":"x","mode":"deep"}"""))
+}

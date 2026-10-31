@@ -11,7 +11,11 @@ Reply with ONE JSON object and nothing else. Choose the intent:
 {"intent":"open_app","app":"<app name>"}
 {"intent":"call","contact":"<name or number>"}
 {"intent":"reminder","text":"<what to remind>","day_offset":0,"hour":6,"minute":0,"repeat_weekday":null}
-{"intent":"search","query":"<web search query>"}
+{"intent":"search","query":"<web search query>","mode":"quick|deep|academic"}
+{"intent":"calendar","days":1}  (what is on my calendar/schedule; days 1=today, 2=tomorrow, 7=week)
+{"intent":"spending","period":"today|week|month|year"}  (how much money I spent/received/paid, expenses, payment summary)
+{"intent":"event","kind":"birthday|anniversary|bill","title":"<who or what>","month":10,"day":5,"monthly":false}  (yearly birthday/anniversary or monthly bill reminder; month null if monthly)
+{"intent":"routine","name":"<routine name>"}  (run one of the user's saved routines)
 {"intent":"time"} {"intent":"battery"} {"intent":"tasks"} {"intent":"email"}
 {"intent":"remember","text":"<fact to save>"} {"intent":"recall","query":"<topic>"}
 {"intent":"whatsapp_draft","text":"<message text>"}
@@ -41,7 +45,16 @@ Examples:
                     else Intent.SetReminder(text, ParsedTime(o.optInt("day_offset", 0).coerceIn(0, 7), h, m), s("repeat_weekday").uppercase().takeIf { it in setOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN") })
                 }
             }
-            "search" -> s("query").takeIf { it.isNotEmpty() }?.let { Intent.Search(it) }
+            "search" -> s("query").takeIf { it.isNotEmpty() }?.let { Intent.Search(it, s("mode").lowercase().takeIf { m -> m in setOf("quick", "deep", "academic") } ?: "quick") }
+            "calendar" -> Intent.Calendar(o.optInt("days", 1).coerceIn(1, 14))
+            "spending" -> Intent.Spending(s("period").lowercase().takeIf { it in setOf("today", "week", "month", "year") } ?: "month")
+            "routine" -> s("name").takeIf { it.isNotEmpty() }?.let { Intent.RunRoutine(it) }
+            "event" -> {
+                val day = o.optInt("day", 0); val monthly = o.optBoolean("monthly", false); val month = if (o.isNull("month")) null else o.optInt("month", 0)
+                val kind = s("kind").lowercase().takeIf { it in setOf("birthday", "anniversary", "bill") }
+                if (kind == null || s("title").isEmpty() || day !in 1..31 || (!monthly && month !in 1..12)) null
+                else Intent.SetEvent(kind, s("title"), if (monthly) null else month, day, monthly, "en")
+            }
             "time" -> Intent.AskTime
             "battery" -> Intent.AskBattery
             "tasks" -> Intent.ListTasks

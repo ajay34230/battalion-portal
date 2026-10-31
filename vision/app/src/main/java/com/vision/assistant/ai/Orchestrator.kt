@@ -54,7 +54,8 @@ class Orchestrator(private val app: VisionApp) {
         }
         // Short, unambiguous commands skip the model entirely: instant answer, no battery/RAM cost.
         val ruleIntent = IntentParser.parse(userText)
-        val fast = isFastCommand(ruleIntent)
+        // With a real model loaded the MODEL understands the request (any wording, any language); the rule parser is only used for trivially safe commands or when the model's answer is unusable.
+        val fast = isFastCommand(ruleIntent) && (!engine.isNeuralModelLoaded || isTrivial(ruleIntent))
         val plan = if (fast) null else try { engine.plan(userText) } catch (_: Throwable) { null }
         val intent = if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
 
@@ -83,6 +84,8 @@ class Orchestrator(private val app: VisionApp) {
         if (learned.isNotEmpty()) return reply.copy(text = reply.text + "\n\n" + Say("(I'll remember: ${learned.joinToString("; ") { it.content }})", "(Yaad rakhunga: ${learned.joinToString("; ") { it.content }})", "(याद रखूँगा: ${learned.joinToString("; ") { it.content }})").`in`(lang))
         return reply
     }
+
+    private fun isTrivial(i: Intent) = when (i) { is Intent.OpenApp, is Intent.Call, Intent.AskTime, Intent.AskBattery, Intent.ListTasks -> true; else -> false }
 
     private fun isFastCommand(i: Intent) = when (i) {
         is Intent.Termux, is Intent.See, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall, is Intent.Calendar, is Intent.RunRoutine, is Intent.Spending -> true
