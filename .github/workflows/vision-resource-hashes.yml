@@ -59,7 +59,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, urllib.request, subprocess
-          repos = ["litert-community/Qwen3-1.7B","litert-community/Gemma3-1B-IT","litert-community/Phi-4-mini-instruct","litert-community/gemma-4-12B-it-litert-lm","litert-community/Nanbeige4.2-3B","google/gemma-3n-E2B-it-litert-lm","google/gemma-3n-E4B-it-litert-lm","litert-community/granite-4.0-350m-litert-lm","litert-community/SmolLM2-360M-Instruct","litert-community/Qwen2.5-1.5B-Instruct","litert-community/Qwen3-14B"]
+          repos = ["litert-community/Phi-4-mini-instruct","litert-community/gemma-4-12B-it-litert-lm","litert-community/Nanbeige4.2-3B","google/gemma-3n-E2B-it-litert-lm","google/gemma-3n-E4B-it-litert-lm","litert-community/granite-4.0-350m-litert-lm","litert-community/SmolLM2-360M-Instruct","litert-community/Qwen2.5-1.5B-Instruct","litert-community/Qwen3-14B"]
           for repo in repos:
             try:
               info = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}"))
@@ -67,12 +67,14 @@ jobs:
               tree = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true"))
             except Exception as e:
               print(f"::notice title=CAND::{repo} ERROR {e}"); continue
+            parts = []
             for it in tree:
               fn = it.get("path","")
               if not fn.endswith(".litertlm"): continue
               lfs = it.get("lfs") or {}
-              code = subprocess.run(["curl","-sIL","-o","/dev/null","-w","%{http_code}",f"https://huggingface.co/{repo}/resolve/main/{fn}"],capture_output=True,text=True).stdout
-              print(f"::notice title=CAND::{repo} | {fn} | size={lfs.get('size')} | sha256={lfs.get('oid')} | licence={lic} | gated={gated} | anon_http={code}")
+              parts.append(f"{fn};{lfs.get('size')};{lfs.get('oid')}")
+            code = subprocess.run(["curl","-sIL","-o","/dev/null","-w","%{http_code}",f"https://huggingface.co/{repo}/resolve/main/{(tree[0]['path'] if not parts else parts[0].split(';')[0])}"],capture_output=True,text=True).stdout
+            print(f"::notice title=CAND::{repo} | licence={lic} | gated={gated} | anon_http={code} | files: " + " || ".join(parts[:3]) + f" (+{max(0,len(parts)-3)} more)")
           PY
       - name: Maven versions
         run: |
