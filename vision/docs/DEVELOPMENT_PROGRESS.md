@@ -14,3 +14,10 @@
 | 10 Locked mode | policy + visible service | see TEST_REPORT | no |
 | 11 Hybrid | network check + offline research queue | see TEST_REPORT | no |
 | 12 Optimisation | not started: needs real device profiling | — | no |
+
+## Engineering mission (started 2026-10-31)
+| Mission phase | Status |
+|---|---|
+| 0 Audit docs | done (ARCHITECTURE_AUDIT, BUGS_AND_RISKS, FEATURE_IMPLEMENTATION_MAP, UPGRADE_ROADMAP, REGRESSION_TEST_PLAN) |
+| 1 Data/file/ZIP safety + encryption | in progress |
+| 2-12 | not started |
