@@ -26,3 +26,6 @@ No speed numbers are claimed. Speed work done: streaming, one model call for mos
 ## Not built / not tested
 - llama.cpp (GGUF) engine: builds in CI, not integrated. ExecuTorch: evaluated only. Whisper/Piper: not built.
 - Everything device-dependent (streaming, GPU, Termux, widgets, offline check in airplane mode, embeddings): NOT TESTED.
+
+## Update: embedding backfill
+A minute after the app starts, if EmbeddingGemma is installed, existing memories are indexed in the background (up to 300 per start) and the model is then unloaded. NOT TESTED on device.

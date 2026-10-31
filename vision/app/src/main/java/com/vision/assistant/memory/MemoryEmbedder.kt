@@ -61,6 +61,23 @@ object MemoryEmbedder {
         }
     }
 
+    /** Indexes memories that have no cached vector yet, a few at a time, then frees the embedding model. Does nothing if the model is not installed. */
+    suspend fun backfill(app: VisionApp, limit: Int = 300): Int {
+        if (ResourceManifest.byId(MODEL_ID)?.let { Downloads.manager(app).state(it) == InstallState.INSTALLED } != true) return 0
+        var done = 0
+        try {
+            for (m in app.database.memory().list().filter { it.category != "creator" }.take(limit)) {
+                val f = File(dir(app), EmbeddingCodec.key(m.content) + ".f32")
+                if (f.isFile) continue
+                val v = embedNow(app, m.content) ?: break
+                f.writeBytes(EmbeddingCodec.toBytes(v)); done++
+                kotlinx.coroutines.yield()
+            }
+        } finally { close() }
+        if (done > 0) com.vision.assistant.diag.DiagLog.log("info", "embedding backfill indexed $done memories")
+        return done
+    }
+
     fun clearCache(app: VisionApp) { try { dir(app).listFiles()?.forEach { it.delete() } } catch (_: Throwable) { } }
 
     fun close() { synchronized(lock) { emb?.close(); emb = null } }

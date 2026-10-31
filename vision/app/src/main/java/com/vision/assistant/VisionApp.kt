@@ -22,6 +22,8 @@ class VisionApp : Application() {
         // Load an installed language model in the background so the first reply is not slow.
         appScope.launch {
             com.vision.assistant.core.SharedFiles.sweep(this@VisionApp)
+            // Index memories for meaning-based search a minute after start so it never slows the first reply.
+            appScope.launch { kotlinx.coroutines.delay(60_000); try { com.vision.assistant.memory.MemoryEmbedder.backfill(this@VisionApp) } catch (_: Throwable) {} }
             // VISION always knows who built it.
             val sp = getSharedPreferences("vision_prefs", MODE_PRIVATE)
             if (!sp.getBoolean("creator_seeded", false)) {
