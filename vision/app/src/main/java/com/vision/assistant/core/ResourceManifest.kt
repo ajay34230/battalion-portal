@@ -29,7 +29,8 @@ data class ResourceEntry(
 object ResourceManifest {
     private const val HF = "https://huggingface.co/litert-community"
 
-    val entries: List<ResourceEntry> = listOf(
+    /** The built-in, hand-checked catalogue. */
+    val base: List<ResourceEntry> = listOf(
         ResourceEntry(
             "qwen3-0.6b-int4", ResourceKind.LLM, "Qwen3 0.6B (int4) — small language model",
             "$HF/Qwen3-0.6B/resolve/main/Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
@@ -117,6 +118,26 @@ object ResourceManifest {
             "Apache-2.0", "hi",
         ),
     )
+
+    /** Models the owner found online and added; kept in preferences and re-validated on every load. */
+    @Volatile private var extra: List<ResourceEntry> = emptyList()
+    val entries: List<ResourceEntry> get() = base + extra.filter { x -> base.none { it.id == x.id } }
+
+    fun loadExtra(c: android.content.Context) {
+        extra = try {
+            val a = org.json.JSONArray(c.getSharedPreferences("vision_discovered", android.content.Context.MODE_PRIVATE).getString("list", "[]"))
+            (0 until a.length()).mapNotNull { ModelCatalog.decode(a.getJSONObject(it)) }
+        } catch (_: Exception) { emptyList() }
+    }
+    fun addExtra(c: android.content.Context, e: ResourceEntry) {
+        if (extra.any { it.id == e.id } || base.any { it.id == e.id }) return
+        extra = extra + e; saveExtra(c)
+    }
+    fun removeExtra(c: android.content.Context, id: String) { extra = extra.filter { it.id != id }; saveExtra(c) }
+    private fun saveExtra(c: android.content.Context) {
+        c.getSharedPreferences("vision_discovered", android.content.Context.MODE_PRIVATE).edit().putString("list", org.json.JSONArray(extra.map { ModelCatalog.encode(it) }).toString()).apply()
+    }
+    fun isDiscovered(id: String) = extra.any { it.id == id }
 
     fun byId(id: String) = entries.firstOrNull { it.id == id }
 }
