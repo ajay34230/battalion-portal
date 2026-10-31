@@ -82,7 +82,17 @@ object OfflineRunner {
         out += timed("coding", "Coding assistant runs programs") {
             if (!app.packageManager.getLaunchIntentForPackage("com.termux").let { it != null }) CheckStatus.BLOCKED to "Termux is not installed." else CheckStatus.NOT_TESTED to "Termux is installed; run a program from Coding Studio to test."
         }
-        out += timed("embeddings", "Neural-embedding memory search") { CheckStatus.NOT_SUPPORTED to "Not built yet. Memory uses keyword and fuzzy search." }
+        out += timed("embeddings", "Meaning-based memory search") {
+            val have = ResourceManifest.byId(com.vision.assistant.memory.MemoryEmbedder.MODEL_ID)?.let { mgr.state(it) == InstallState.INSTALLED } == true
+            if (!have) return@timed CheckStatus.BLOCKED to "Needs the EmbeddingGemma model (Models & downloads, 165 MB)."
+            val q = com.vision.assistant.memory.MemoryEmbedder.embedNow(app, "my mother's birthday")
+            val near = com.vision.assistant.memory.MemoryEmbedder.embedNow(app, "Mummy ka janamdin 12 March")
+            val far = com.vision.assistant.memory.MemoryEmbedder.embedNow(app, "electricity bill is due on the 5th")
+            if (q == null || near == null || far == null) CheckStatus.FAILED to "The embedding model did not load."
+            else { fun dot(a: FloatArray, b: FloatArray) = a.indices.sumOf { (a[it] * b[it]).toDouble() }
+                val dn = dot(q, near); val df = dot(q, far)
+                if (dn > df) CheckStatus.PASSED to "Related text scored %.2f, unrelated %.2f.".format(dn, df) else CheckStatus.FAILED to "Related text scored %.2f but unrelated %.2f.".format(dn, df) }
+        }
         val after = NetworkMonitor.isOnline(app)
         val offline = !before && !after
         OfflineStore.save(app, out, offline)

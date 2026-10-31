@@ -213,7 +213,7 @@ fun MemoryScreen(app: VisionApp) {
                 if (items.isNotEmpty()) {
                     if (!confirmErase) TextButton(onClick = { confirmErase = true }) { Text("Erase all memory…", color = androidx.compose.ui.graphics.Color(0xFFFF6B6B)) }
                     else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { scope.launch { app.database.memory().clear(); com.vision.assistant.ai.Learning.refresh(app.database.memory()); confirmErase = false } }) { Text("Yes, erase everything") }
+                        Button(onClick = { scope.launch { app.database.memory().clear(); com.vision.assistant.memory.MemoryEmbedder.clearCache(app); com.vision.assistant.ai.Learning.refresh(app.database.memory()); confirmErase = false } }) { Text("Yes, erase everything") }
                         OutlinedButton(onClick = { confirmErase = false }) { Text("Cancel") }
                     }
                 }

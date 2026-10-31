@@ -39,7 +39,9 @@ class ToolRegistry(private val app: VisionApp) {
             is Intent.Recall -> {
                 val found = db.memory().search(intent.query, 5).ifEmpty {
                     val all = db.memory().list().filter { it.category != "creator" }
-                    com.vision.assistant.memory.HybridRank.rank(intent.query, all.map { com.vision.assistant.memory.HybridRank.Doc(it.content, it.importance, it.confidence) }, 5, 0.08).map { all[it.first] }
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                        com.vision.assistant.memory.HybridRank.rank(intent.query, all.map { com.vision.assistant.memory.HybridRank.Doc(it.content, it.importance, it.confidence) }, 5, 0.08, com.vision.assistant.memory.MemoryEmbedder.forRecall(app)).map { all[it.first] }
+                    }
                 }
                 if (found.isEmpty()) ToolResult.Failure(Say("Nothing saved about \"${intent.query}\".", "\"${intent.query}\" ke baare mein kuch save nahi hai.", "\"${intent.query}\" के बारे में कुछ सहेजा नहीं है।"))
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))

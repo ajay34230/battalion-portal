@@ -88,6 +88,12 @@ object ResourceManifest {
             "Apache-2.0", "multilingual (incl. Hindi)", "EXPERIMENTAL: 6 GB file, expected 9–10 GB of memory while running. Only real RAM counts — extended/virtual RAM is slow flash storage and does not make this fast. Likely slow (under ~2 tokens/s) or may close the app on an 8 GB phone; fine to try on a 12 GB+ phone. Text only.", experimental = true,
         ),
         ResourceEntry(
+            "embeddinggemma-270m", ResourceKind.EMBEDDING, "EmbeddingGemma 270M — meaning-based memory search",
+            "https://huggingface.co/litert-community/embeddinggemma-2-text-270m-litert-lm/resolve/main/embeddinggemma-2-text-270m.litertlm", "embeddinggemma-2-text-270m.litertlm",
+            "2d079ee2f6f066b1f368e8d7c819f55214eaef1d0513b312321901f30ab286fb", 164_626_432, 1_500,
+            "Apache-2.0", "multilingual", "Lets memory search match meaning (for example \"mother's birthday\" finds \"Mummy ka janamdin\"). Small and local. Unverified on real phones.",
+        ),
+        ResourceEntry(
             "gemma4-e2b", ResourceKind.LLM, "Gemma 4 E2B — language + image understanding",
             "$HF/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm", "gemma-4-E2B-it.litertlm",
             "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c", 2_588_147_712, 6_000,

@@ -125,6 +125,7 @@ class EngineProvider(private val app: VisionApp) {
 
     /** Frees the model when Android is short of memory; it reloads on next use. */
     suspend fun unload() = mutex.withLock {
+        com.vision.assistant.memory.MemoryEmbedder.close()
         (current as? LiteRtLmEngine)?.close(); current = null; currentId = null
         label.value = "Model unloaded to free memory (reloads when needed)"
     }
