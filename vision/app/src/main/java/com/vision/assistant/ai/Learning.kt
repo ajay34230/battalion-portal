@@ -19,7 +19,7 @@ object Learning {
     private val rules: List<Triple<Regex, String, (MatchResult) -> String>> = listOf(
         Triple(Regex("\\b(?:my name is|i am called|i'm called|mera naam|mera nam)\\s+([\\p{L}]+)(?:\\s(?!hai\\b)([\\p{L}]+))?", RegexOption.IGNORE_CASE), "fact") { "User's name is ${cap((it.groupValues[1] + " " + it.groupValues[2]).trim())}" },
         Triple(Regex("\\b(?:i live in|i stay in|i am from|i'm from|main\\s+([\\p{L}]+)\\s+(?:mein|me)\\s+rahta)\\s*([\\p{L}]+(?:\\s[\\p{L}]+)?)?", RegexOption.IGNORE_CASE), "fact") { m -> "User lives in ${cap((m.groupValues[1].ifBlank { m.groupValues[2] }).trim())}" },
-        Triple(Regex("\b(?:i work as|i work at)\s+([a-z ]{3,30}?)(?:\.|,|$| and )", RegexOption.IGNORE_CASE), "fact") { "User works ${it.groupValues[0].trim().lowercase().replace("i work ", "")}" },
+        Triple(Regex("\\b(?:i work as|i work at)\\s+([a-z ]{3,30}?)(?:\\.|,|$| and )", RegexOption.IGNORE_CASE), "fact") { "User works ${it.groupValues[0].trim().lowercase().replace("i work ", "")}" },
         Triple(Regex("\\b(?:i (?:really )?(?:like|love|prefer|enjoy)|mujhe\\s+(.{2,30}?)\\s+pasand)\\s*([a-z ]{2,40})?", RegexOption.IGNORE_CASE), "preference") { m -> "User likes ${(m.groupValues[1].ifBlank { m.groupValues[2] }).trim()}" },
         Triple(Regex("\\b(?:i (?:hate|dislike|don't like|do not like)|mujhe\\s+(.{2,30}?)\\s+pasand nahi)\\s*([a-z ]{2,40})?", RegexOption.IGNORE_CASE), "preference") { m -> "User dislikes ${(m.groupValues[1].ifBlank { m.groupValues[2] }).trim()}" },
         Triple(Regex("\\bmy (wife|husband|mother|mom|father|dad|brother|sister|son|daughter|friend|boss)(?:'s)? (?:name )?is ([\\p{L}]+)", RegexOption.IGNORE_CASE), "person") { "User's ${it.groupValues[1].lowercase()} is ${cap(it.groupValues[2])}" },
