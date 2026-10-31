@@ -32,6 +32,9 @@ interface TaskDao {
     @Update suspend fun update(t: TaskItem)
     @Query("SELECT * FROM task_item ORDER BY done ASC, dueAt IS NULL, dueAt ASC") fun all(): Flow<List<TaskItem>>
     @Query("SELECT * FROM task_item WHERE done = 0") suspend fun pending(): List<TaskItem>
+    @Query("SELECT * FROM task_item WHERE id = :id") suspend fun byId(id: Long): TaskItem?
+    @Delete suspend fun delete(t: TaskItem)
+    @Query("SELECT * FROM task_item WHERE done = 0 AND dueAt IS NOT NULL ORDER BY dueAt ASC LIMIT :n") fun upcoming(n: Int): Flow<List<TaskItem>>
 }
 
 @Dao

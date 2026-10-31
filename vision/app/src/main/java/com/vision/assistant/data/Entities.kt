@@ -26,9 +26,13 @@ data class TaskItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val dueAt: Long? = null,
-    val repeat: String? = null, // null | daily | weekly:<DAY>
+    val repeat: String? = null, // null | weekly:<DAY> | monthly:<DD> | yearly:<MM-DD>
     val done: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
+    val kind: String = "reminder", // reminder | bill | birthday | anniversary | medicine
+    val notes: String = "",
+    val leadDays: String = "", // "3,1" = also remind 3 and 1 days before
+    val lang: String = "en",
 )
 
 @Entity(tableName = "audit_entry")

@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 class VisionApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.vision.assistant.tasks.ReminderScheduler.ensureChannels(this)
         // Load an installed language model in the background so the first reply is not slow.
         appScope.launch {
             // VISION always knows who built it.

@@ -23,6 +23,7 @@ class ToolRegistry(private val app: VisionApp) {
             Intent.AskTime -> device.time()
             Intent.AskBattery -> device.battery()
             is Intent.SetReminder -> setReminder(intent)
+            is Intent.SetEvent -> setEvent(intent)
             Intent.ListTasks -> {
                 val pending = db.tasks().pending()
                 if (pending.isEmpty()) ToolResult.Success(Say("You have no pending tasks.", "Koi pending task nahi hai.", "कोई लंबित कार्य नहीं है।"))
@@ -93,7 +94,7 @@ class ToolRegistry(private val app: VisionApp) {
         if (wake && i.repeatWeekday == null) return device.setAlarm(i).also { audit("alarm", i.text, it) }
         val at = i.repeatWeekday?.let { DeviceTools.nextWeekdayMillis(it, t.hour, t.minute) } ?: DeviceTools.triggerMillis(t.dayOffset, t.hour, t.minute)
         val id = app.database.tasks().insert(TaskItem(title = i.text, dueAt = at, repeat = i.repeatWeekday?.let { "weekly:$it" }))
-        ReminderScheduler.schedule(app, id, i.text, at, weekly = i.repeatWeekday != null)
+        ReminderScheduler.scheduleTask(app, app.database.tasks().byId(id) ?: return ToolResult.Failure(Say.plain("Could not save the reminder.")))
         val res = ToolResult.Success(
             Say("Reminder set for %02d:%02d: ${i.text}.".format(t.hour, t.minute), "Reminder %02d:%02d ke liye laga diya: ${i.text}.".format(t.hour, t.minute), "रिमाइंडर %02d:%02d के लिए लगा दिया: ${i.text}।".format(t.hour, t.minute)),
         )
@@ -103,6 +104,21 @@ class ToolRegistry(private val app: VisionApp) {
             "Reminder saved, but notifications are blocked for VISION, so it cannot alert you. Allow notifications on the Permissions screen.",
             "Reminder save ho gaya, par VISION ki notifications band hain, isliye alert nahi aayega. Permissions screen par allow karein.",
             "रिमाइंडर सहेज लिया, पर VISION की सूचनाएँ बंद हैं, इसलिए अलर्ट नहीं आएगा। Permissions स्क्रीन पर अनुमति दें।"))
+        return res
+    }
+
+    private suspend fun setEvent(i: Intent.SetEvent): ToolResult {
+        val kind = com.vision.assistant.tasks.EventKind.of(i.kind)
+        val hour = if (kind == com.vision.assistant.tasks.EventKind.BILL) 10 else 9
+        val at = if (i.monthly) com.vision.assistant.tasks.EventPlanner.nextMonthly(i.day, hour, 0) else com.vision.assistant.tasks.EventPlanner.nextYearly(i.month ?: return ToolResult.Failure(Say.plain("Which month?")), i.day, hour, 0)
+        val repeat = if (i.monthly) "monthly:%02d".format(i.day) else "yearly:%02d-%02d".format(i.month, i.day)
+        val leads = kind.defaultLeads.joinToString(",")
+        val id = app.database.tasks().insert(TaskItem(title = i.title, dueAt = at, repeat = repeat, kind = kind.id, leadDays = leads, lang = i.lang))
+        ReminderScheduler.scheduleTask(app, app.database.tasks().byId(id) ?: return ToolResult.Failure(Say.plain("Could not save the event.")))
+        val df = java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault()).format(java.util.Date(at))
+        val lead = if (leads.isNotEmpty()) " I will also remind you ahead of time." else ""
+        val res = ToolResult.Success(Say("Saved ${kind.label.lowercase()}: ${i.title}, next on $df.$lead", "${kind.label} save kar liya: ${i.title}, agla $df ko.$lead", "${kind.label} सहेज लिया: ${i.title}, अगली तारीख $df।"))
+        audit("event", i.title, res)
         return res
     }
 

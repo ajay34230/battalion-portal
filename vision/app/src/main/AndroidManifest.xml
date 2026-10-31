@@ -86,6 +86,7 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+        <receiver android:name=".tasks.ReminderActionReceiver" android:exported="false" />
         <receiver android:name=".core.DownloadActionReceiver" android:exported="false" />
         <receiver android:name=".termux.TermuxResultReceiver" android:exported="false" />
         <service

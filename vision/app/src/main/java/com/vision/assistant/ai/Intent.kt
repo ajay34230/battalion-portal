@@ -7,6 +7,8 @@ data class ParsedTime(val dayOffset: Int, val hour: Int, val minute: Int)
 sealed interface Intent {
     data class OpenApp(val app: String) : Intent
     data class SetReminder(val text: String, val time: ParsedTime?, val repeatWeekday: String?) : Intent
+    /** Birthday, anniversary or monthly bill: month is null for monthly bills. */
+    data class SetEvent(val kind: String, val title: String, val month: Int?, val day: Int, val monthly: Boolean, val lang: String) : Intent
     data class Call(val contact: String) : Intent
     data class Search(val query: String) : Intent
     data class Remember(val text: String) : Intent
@@ -43,6 +45,7 @@ object IntentParser {
         Regex("^(?:remember|note|yaad rakho|yaad rakhna|note kar)\\s+(?:that\\s+|ki\\s+)?(.+)$").find(l)?.let { return Intent.Remember(it.groupValues[1].trim()) }
         Regex("^(?:what do you remember about|recall|mujhe yaad dilao|kya yaad hai)\\s+(.+)$").find(l)?.let { return Intent.Recall(it.groupValues[1].trim()) }
 
+        com.vision.assistant.tasks.EventParser.parse(t)?.let { return Intent.SetEvent(it.kind.id, it.title, it.month, it.day, it.monthly, it.lang) }
         if (Regex("remind|reminder|yaad dila|utha dena|utha do|jaga dena|alarm|याद दिला|उठा").containsMatchIn(l)) {
             val repeat = if (Regex("every|har ").containsMatchIn(l)) weekdays.entries.firstOrNull { l.contains(it.key) }?.value else null
             return Intent.SetReminder(reminderText(t), parseTime(l), repeat)
