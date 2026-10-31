@@ -56,8 +56,9 @@ class Orchestrator(private val app: VisionApp) {
         val ruleIntent = IntentParser.parse(userText)
         // Clear commands the rule parser recognises run instantly (no model call = fast). Everything else goes to the model, which understands any wording or language in ONE call.
         val fast = isFastCommand(ruleIntent)
-        val plan = if (fast) null else try { engine.plan(userText, onPartial) } catch (_: Throwable) { null }
-        val intent = if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
+        val chatOnly = !fast && ChatOnly.matches(userText)
+        val plan = if (fast || chatOnly) null else try { engine.plan(userText, onPartial) } catch (_: Throwable) { null }
+        val intent = if (chatOnly) Intent.Chat(userText) else if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
 
         val reply = if (locked && !LockPolicy.allowedWhenLocked(intent, settings)) {
             AgentReply(Say("That is turned off while the phone is locked (see Settings).", "Locked phone par yeh band hai (Settings dekhein).", "फ़ोन लॉक होने पर यह बंद है (सेटिंग्स देखें)।").`in`(lang), lang)

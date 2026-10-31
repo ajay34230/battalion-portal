@@ -32,3 +32,6 @@ A minute after the app starts, if EmbeddingGemma is installed, existing memories
 
 ## Update: Balanced mode speed
 Balanced now loads the small model first (so the first answer is quick) and never swaps models for a short plain message; longer or harder messages still go to the stronger model. Effect on real speed: NOT MEASURED, device log needed.
+
+## Update: measured slowness (first Diagnostics log)
+Log from the phone (Qwen3 0.6B, CPU): model load 2.9 s, but the planning call took 16-20 s for answers of only 18-66 characters. The time is therefore spent reading the ~7 KB planner prompt, not generating. (Inference from timings; prompt-read and generation were not timed separately.) The planner also misread "how are you" as a time question. Fix: plain small talk and simple "explain/why" questions skip the planner and use the short chat prompt. Other messages still use the planner and stay slow on this hardware until the prompt is shortened or cached.
