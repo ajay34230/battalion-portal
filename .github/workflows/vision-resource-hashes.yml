@@ -14,7 +14,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, urllib.request, subprocess
-          repos = ["litert-community/gemma-4-E4B-it-litert-lm","litert-community/gemma-4-E2B-it-litert-lm"]
+          repos = ["litert-community/Qwen3.5-9B","litert-community/Qwen3.5-4B"]
           for repo in repos:
             try:
               tree = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true"))
