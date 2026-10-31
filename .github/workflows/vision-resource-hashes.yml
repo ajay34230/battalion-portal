@@ -105,18 +105,21 @@ jobs:
           print('::notice title=LLAMA-ANDROID-TREE::'+' | '.join(p)[:3500])
           "
           echo "$tag" > tag.txt
-      - name: LiteRT-LM embedding API and embedding models
+      - name: Embedding input type and the EmbeddingGemma files
         run: |
           curl -sSfL -o l.aar https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/0.19.0/litertlm-android-0.19.0.aar && unzip -oq l.aar classes.jar
-          for c in EmbeddingEngine EmbeddingEngineConfig EmbeddingOptions EmbeddingResponse EmbeddingCallback EmbeddingCapability; do
-            javap -cp classes.jar com.google.ai.edge.litertlm.$c 2>&1 | grep -v "default\|static {}\|DefaultConstructorMarker\|hashCode\|equals\|component\|copy" | sed 's/com.google.ai.edge.litertlm.//g;s/java.lang.//g;s/java.util.//g' | tr -s ' ' | tr '\n' ' ' | cut -c1-1500 | sed "s/^/::notice title=EMB-$c::/"; echo
+          echo "::notice title=EMB-INPUT-CLASSES::$(unzip -l classes.jar | grep -o 'litertlm/InputData[A-Za-z0-9$]*' | tr '\n' ' ')"
+          for c in InputData 'InputData$Text' Backend 'Backend$CPU'; do
+            javap -cp classes.jar "com.google.ai.edge.litertlm.$c" 2>&1 | sed 's/com.google.ai.edge.litertlm.//g;s/java.lang.//g' | tr -s ' ' | tr '\n' ' ' | cut -c1-700 | sed "s/^/::notice title=EMB-$c::/"; echo
           done
-          curl -sSf "https://huggingface.co/api/models?author=litert-community&search=embed&limit=20" | python3 -c "
+          for r in embeddinggemma-2-text-270m-litert-lm embeddinggemma-300m; do
+            curl -sSf "https://huggingface.co/api/models/litert-community/$r/tree/main" | python3 -c "
           import sys,json
-          print('::notice title=EMB-MODELS::'+' | '.join(m['id']+' dl='+str(m.get('downloads')) for m in json.load(sys.stdin)))"
-          curl -sSf "https://huggingface.co/api/models?author=litert-community&limit=100&sort=downloads&direction=-1" | python3 -c "
+          print('::notice title=EMB-FILES $r::'+' | '.join(x['path']+' size='+str(x.get('size'))+' sha='+str((x.get('lfs') or {}).get('oid')) for x in json.load(sys.stdin) if x['type']=='file'))"
+            curl -sSf "https://huggingface.co/api/models/litert-community/$r" | python3 -c "
           import sys,json
-          print('::notice title=LITERT-COMMUNITY-TOP::'+' | '.join(m['id'].split('/')[1] for m in json.load(sys.stdin))[:1800])"
+          m=json.load(sys.stdin); print('::notice title=EMB-INFO $r::'+str(m.get('tags'))[:500]+' gated='+str(m.get('gated')))"
+          done
       - name: Gradle plugin versions
         run: |
           for u in \
