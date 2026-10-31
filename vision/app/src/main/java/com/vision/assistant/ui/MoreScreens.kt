@@ -70,6 +70,21 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         ScreenTitle("Settings")
         Text("Everything about how VISION listens, speaks, searches and behaves on a locked phone.", fontSize = 13.sp, color = VisionColors.Muted)
 
+        GroupHeader("Language model", "Which installed AI brain VISION thinks with")
+        run {
+            val mgr = remember { com.vision.assistant.core.Downloads.manager(app) }
+            val installedLlms = remember { com.vision.assistant.core.ResourceManifest.entries.filter { it.kind == com.vision.assistant.core.ResourceKind.LLM && mgr.state(it) == com.vision.assistant.core.InstallState.INSTALLED } }
+            var chosen by remember { mutableStateOf(app.engines.preferred()) }
+            val label by app.engines.label.collectAsState()
+            Text("Now running: $label", fontSize = 12.sp, color = VisionColors.Muted)
+            if (installedLlms.isEmpty()) Text("No model installed yet. Open More → Models & downloads.", fontSize = 12.sp)
+            else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                fun pick(id: String) { chosen = id; app.engines.setPreferred(id); app.appScope.launch { try { app.engines.current() } catch (_: Throwable) {} } }
+                androidx.compose.material3.FilterChip(selected = chosen == "auto", onClick = { pick("auto") }, label = { Text("Automatic (strongest that fits)") })
+                for (m in installedLlms) androidx.compose.material3.FilterChip(selected = chosen == m.id, onClick = { pick(m.id) }, label = { Text(m.title + if (m.experimental) "  (experimental)" else "") })
+                Text("Switching reloads the model; the first answer after a switch is slower. Smaller models answer faster.", fontSize = 11.sp, color = VisionColors.Muted)
+            }
+        }
         GroupHeader("Calling VISION")
         Text("VISION opens as a glowing sheet over any screen. Ways to call it: the Quick Settings tile “Ask VISION”, the Speak button in the voice-session notification, or set VISION as your Digital assistant app (Android Settings → Apps → Default apps) so a power-button or home-gesture long press opens it. A hands-free “Hey Vision” wake word is not built yet.", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -115,6 +130,7 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         OutlinedTextField(brave, { brave = it }, Modifier.fillMaxWidth(), label = { Text("Brave API key") }, singleLine = true)
         Button(onClick = { Prefs.setSearxngUrl(ctx, searx); Prefs.setBraveKey(ctx, brave); msg = "Saved." }) { Text("Save") }
         if (msg.isNotBlank()) Text(msg)
+        androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 48.dp))
     }
 }
 

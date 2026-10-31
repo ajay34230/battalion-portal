@@ -125,7 +125,7 @@ fun MoreScreen(app: VisionApp, go: (String) -> Unit) {
         Entry("🔑", "Permissions", "Control what I can access", Routes.PERMISSIONS),
     )
     ScreenFrame("More", "Tools and settings") {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for (e in entries) InfoCard(onClick = { go(e.route) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(e.icon, fontSize = 24.sp)

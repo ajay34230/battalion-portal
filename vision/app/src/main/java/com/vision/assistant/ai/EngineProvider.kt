@@ -33,11 +33,17 @@ class EngineProvider(private val app: VisionApp) {
     private fun markBad(id: String) { prefs.edit().putStringSet("bad", badModels() + id).apply() }
     fun clearBad(id: String) { prefs.edit().putStringSet("bad", badModels() - id).putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) - id).apply() }
 
+    /** "auto" = strongest installed model, or the id of the model the user chose in Settings. */
+    fun preferred(): String = prefs.getString("preferred", "auto") ?: "auto"
+    fun setPreferred(id: String) { prefs.edit().putString("preferred", id).apply(); invalidate() }
+
     private fun installed(needImage: Boolean): ResourceEntry? {
         val mgr = Downloads.manager(app)
         val bad = badModels()
         val ok = ResourceManifest.entries.filter { it.kind == ResourceKind.LLM && it.id !in bad && mgr.compatible(it) && mgr.state(it) == InstallState.INSTALLED }
         // Experimental (oversized) models are used only when nothing safe is installed or when the user installed them on purpose and they loaded before.
+        val want = preferred()
+        if (!needImage && want != "auto") ok.firstOrNull { it.id == want }?.let { return it }
         return if (needImage) ok.filter { it.multimodal }.maxByOrNull { it.sizeBytes }
         else (ok.filter { !it.multimodal }.maxByOrNull { it.sizeBytes } ?: ok.maxByOrNull { it.sizeBytes })
     }
