@@ -48,13 +48,17 @@ object ModelRouter {
         if (candidates.isEmpty()) return null
         if (preferredId != "auto") candidates.firstOrNull { it.id == preferredId }?.let { return Choice(it.id, "your choice in Settings") }
         val pool = candidates.filter { !it.experimental }.ifEmpty { candidates }
-        val best = pool.maxByOrNull { score(it, task, speed, simple) }!!
         val loaded = pool.firstOrNull { it.id == loadedId }
+        // Balanced: a short, plain message never makes the phone swap models. Use what is already loaded, or load the small one first so the first answer is quick.
+        val quick = speed == SpeedPref.BALANCED && simple && task == TaskKind.CHAT
+        if (quick && loaded != null) return Choice(loaded.id, "already loaded, short message")
+        val eff = if (quick) SpeedPref.SPEED else speed
+        val best = pool.maxByOrNull { score(it, task, eff, simple) }!!
         if (loaded != null && loaded.id != best.id && speed != SpeedPref.QUALITY && score(best, task, speed, simple) - score(loaded, task, speed, simple) < SWITCH_MARGIN) return Choice(loaded.id, "already loaded")
         val why = when {
             task == TaskKind.CODE && best.categories.contains("Programming") -> "best installed model for code"
             task == TaskKind.HINDI && !best.languages.contains("weak", true) -> "best installed model for Hindi"
-            speed == SpeedPref.SPEED && simple -> "smallest model, for a quick answer"
+            eff == SpeedPref.SPEED && simple -> "smallest model, for a quick answer"
             else -> "strongest installed model that fits"
         }
         return Choice(best.id, why)

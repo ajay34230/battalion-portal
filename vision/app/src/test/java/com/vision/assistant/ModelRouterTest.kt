@@ -37,5 +37,8 @@ class ModelRouterTest {
         assertEquals("mid", pick(TaskKind.CHAT, listOf(mid, big), s = SpeedPref.SPEED, simple = true).id)
         assertEquals("big", pick(TaskKind.CHAT, listOf(mid, big), s = SpeedPref.SPEED, simple = false).id)
     }
+    @Test fun balancedColdStartPicksSmallForShortMessages() { assertEquals("small", pick(TaskKind.CHAT, listOf(small, big), simple = true).id) }
+    @Test fun balancedShortMessageKeepsLoadedModel() { assertEquals("big", pick(TaskKind.CHAT, listOf(small, big), loaded = "big", simple = true).id) }
+    @Test fun balancedLongMessageStillGetsStrongModel() { assertEquals("big", pick(TaskKind.CHAT, listOf(small, big), loaded = "small", simple = false).id) }
     @Test fun emptyGivesNull() { assertNull(ModelRouter.choose(TaskKind.CHAT, emptyList(), "auto", null, SpeedPref.BALANCED, false)) }
 }

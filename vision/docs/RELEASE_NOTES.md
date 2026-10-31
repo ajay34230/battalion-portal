@@ -29,3 +29,6 @@ No speed numbers are claimed. Speed work done: streaming, one model call for mos
 
 ## Update: embedding backfill
 A minute after the app starts, if EmbeddingGemma is installed, existing memories are indexed in the background (up to 300 per start) and the model is then unloaded. NOT TESTED on device.
+
+## Update: Balanced mode speed
+Balanced now loads the small model first (so the first answer is quick) and never swaps models for a short plain message; longer or harder messages still go to the stronger model. Effect on real speed: NOT MEASURED, device log needed.
