@@ -37,7 +37,7 @@ class AssistActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContent {
             VisionTheme {
-                AiScreen(app, overlay = true, autoListen = true, onUnlockRequest = { text -> askUnlock(km, text) }, onClose = { finish() })
+                AiScreen(app, overlay = true, autoListen = true, onUnlockRequest = { text -> askUnlock(km, text) }, unlockedText = unlockFor.value, onClose = { finish() })
             }
         }
     }

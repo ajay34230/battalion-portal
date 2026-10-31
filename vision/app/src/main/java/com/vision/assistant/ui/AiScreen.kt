@@ -69,7 +69,7 @@ private fun orbCaption(s: OrbState) = when (s) {
  * it starts listening immediately and closes by tapping outside the card.
  */
 @Composable
-fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequest: (String) -> Unit = {}, onClose: () -> Unit) {
+fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequest: (String) -> Unit = {}, unlockedText: String? = null, onClose: () -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val session = remember { AssistantSession(app, ctx, scope) }
@@ -102,6 +102,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
     LaunchedEffect(Unit) { app.engines.current() }
     LaunchedEffect(autoListen) { if (autoListen) startMic() }
     LaunchedEffect(unlock) { unlock?.let { onUnlockRequest(it) } }
+    LaunchedEffect(unlockedText) { unlockedText?.let { session.send(it, forceUnlocked = true) } }
     LaunchedEffect(hindi) { session.hindiMic = hindi }
     LaunchedEffect(speak) { session.speakReplies = speak; if (!speak) session.stopSpeaking() }
     LaunchedEffect(messages.size) { if (messages.isNotEmpty() && !overlay) listState.animateScrollToItem(messages.size - 1) }

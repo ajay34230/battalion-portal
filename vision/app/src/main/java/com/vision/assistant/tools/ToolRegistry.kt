@@ -64,13 +64,18 @@ class ToolRegistry(private val app: VisionApp) {
         val t = i.time ?: return ToolResult.Failure(Say("Tell me the time too, e.g. \"tomorrow at 6 AM\".", "Time bhi batao, jaise \"kal subah 6 baje\".", "समय भी बताइए, जैसे \"कल सुबह 6 बजे\"।"))
         val wake = Regex("wake|utha|jaga|alarm|उठा").containsMatchIn(i.text.lowercase())
         if (wake && i.repeatWeekday == null) return device.setAlarm(i).also { audit("alarm", i.text, it) }
-        val at = DeviceTools.triggerMillis(t.dayOffset, t.hour, t.minute)
+        val at = i.repeatWeekday?.let { DeviceTools.nextWeekdayMillis(it, t.hour, t.minute) } ?: DeviceTools.triggerMillis(t.dayOffset, t.hour, t.minute)
         val id = app.database.tasks().insert(TaskItem(title = i.text, dueAt = at, repeat = i.repeatWeekday?.let { "weekly:$it" }))
         ReminderScheduler.schedule(app, id, i.text, at, weekly = i.repeatWeekday != null)
         val res = ToolResult.Success(
             Say("Reminder set for %02d:%02d: ${i.text}.".format(t.hour, t.minute), "Reminder %02d:%02d ke liye laga diya: ${i.text}.".format(t.hour, t.minute), "रिमाइंडर %02d:%02d के लिए लगा दिया: ${i.text}।".format(t.hour, t.minute)),
         )
         audit("reminder", i.text, res)
+        val blocked = !androidx.core.app.NotificationManagerCompat.from(app).areNotificationsEnabled()
+        if (blocked) return ToolResult.Success(Say(
+            "Reminder saved, but notifications are blocked for VISION, so it cannot alert you. Allow notifications on the Permissions screen.",
+            "Reminder save ho gaya, par VISION ki notifications band hain, isliye alert nahi aayega. Permissions screen par allow karein.",
+            "रिमाइंडर सहेज लिया, पर VISION की सूचनाएँ बंद हैं, इसलिए अलर्ट नहीं आएगा। Permissions स्क्रीन पर अनुमति दें।"))
         return res
     }
 

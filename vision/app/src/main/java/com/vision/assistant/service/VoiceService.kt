@@ -58,7 +58,7 @@ class VoiceService : Service() {
         val locked = (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
         stt.listen("en-IN", preferOffline = !NetworkMonitor.isOnline(this), onText = { text ->
             scope.launch {
-                val r = orchestrator.handle(text, locked)
+                val r = orchestrator.handle(text, locked, com.vision.assistant.privacy.LockPrefs.load(this@VoiceService))
                 // Never read confirmations or sensitive content aloud while locked: just speak the short reply.
                 speaker.speak(if (r.confirm != null) "Please confirm on your phone." else r.text, r.lang)
             }

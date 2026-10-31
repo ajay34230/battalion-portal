@@ -71,6 +71,7 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
         val voskDir = mgr.voskDir(if (hindiMic) "vosk-small-hi" else "vosk-small-en-us")
         if (voskDir != null) {
             scope.launch {
+                vosk?.release()
                 val v = VoskInput(voskDir); vosk = v
                 val ok = withContext(Dispatchers.IO) { try { v.prepare(); true } catch (t: Throwable) { status.value = "Offline speech model failed: ${t.message}"; false } }
                 if (!ok) { orb.value = OrbState.IDLE; return@launch }

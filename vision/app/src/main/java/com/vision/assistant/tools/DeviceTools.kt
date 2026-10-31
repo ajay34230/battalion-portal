@@ -108,6 +108,14 @@ class DeviceTools(private val ctx: Context) {
         (ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager).let { android.os.Build.VERSION.SDK_INT < 31 || it.canScheduleExactAlarms() }
 
     companion object {
+        /** Next occurrence of MON..SUN at hour:minute (today if still ahead). */
+        fun nextWeekdayMillis(day: String, hour: Int, minute: Int, now: Calendar = Calendar.getInstance()): Long {
+            val target = when (day) { "SUN" -> Calendar.SUNDAY; "MON" -> Calendar.MONDAY; "TUE" -> Calendar.TUESDAY; "WED" -> Calendar.WEDNESDAY; "THU" -> Calendar.THURSDAY; "FRI" -> Calendar.FRIDAY; else -> Calendar.SATURDAY }
+            val c = now.clone() as Calendar
+            c.set(Calendar.HOUR_OF_DAY, hour); c.set(Calendar.MINUTE, minute); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+            while (c.get(Calendar.DAY_OF_WEEK) != target || c.timeInMillis <= now.timeInMillis) c.add(Calendar.DAY_OF_YEAR, 1)
+            return c.timeInMillis
+        }
         fun triggerMillis(dayOffset: Int, hour: Int, minute: Int, now: Calendar = Calendar.getInstance()): Long {
             val c = now.clone() as Calendar
             c.add(Calendar.DAY_OF_YEAR, dayOffset)

@@ -80,7 +80,7 @@ fun ModelsScreen(app: VisionApp, back: () -> Unit) {
     var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.vision.assistant.core.ResourceEntry?>(null) }
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Models & downloads", style = MaterialTheme.typography.headlineSmall)
-        Text("This phone: tier ${app.deviceProfile.tier}, ${app.deviceProfile.totalRamMb} MB RAM, ${app.deviceProfile.freeStorageMb} MB free. A model counts as installed only after its SHA-256 matches the official value. Downloads continue in the background and resume if interrupted.", style = MaterialTheme.typography.bodySmall)
+        Text("This phone: tier ${app.deviceProfile.tier}, ${app.deviceProfile.totalRamMb} MB RAM, ${app.deviceProfile.freeStorageMb} MB free. A model counts as installed only after its SHA-256 matches the official value. Downloads keep going while VISION stays running and resume from where they stopped if interrupted.", style = MaterialTheme.typography.bodySmall)
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(ResourceManifest.entries) { e ->
                 val st = remember(status[e.id]) { mgr.state(e) }

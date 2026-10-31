@@ -43,3 +43,16 @@ class PolicyTest {
         assertEquals(Validation.Rejected("Path not allowed."), CommandPolicy.validate("ls", listOf("/etc")))
     }
 }
+
+class WeekdayTest {
+    @org.junit.Test fun nextWeekdayIsOnRequestedDayAndInFuture() {
+        val now = java.util.Calendar.getInstance()
+        for (d in listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
+            val t = com.vision.assistant.tools.DeviceTools.nextWeekdayMillis(d, 6, 0, now)
+            val c = java.util.Calendar.getInstance().apply { timeInMillis = t }
+            org.junit.Assert.assertTrue(t > now.timeInMillis)
+            org.junit.Assert.assertEquals(6, c.get(java.util.Calendar.HOUR_OF_DAY))
+            org.junit.Assert.assertTrue(t - now.timeInMillis <= 7L * 24 * 3600 * 1000)
+        }
+    }
+}
