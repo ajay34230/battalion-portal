@@ -8,15 +8,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** On-device language model via Google's LiteRT-LM (CPU backend: works on any 64-bit ARM phone). */
+/** On-device language model via Google's LiteRT-LM. GPU when the phone supports it, otherwise the CPU (works on any 64-bit ARM phone). */
 class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, label: String, val multimodal: Boolean = false, private val noThink: Boolean = true) : LlmEngine {
     override val name = label
     override val isNeuralModelLoaded = true
     private val bridge = LiteRtBridge()
     private val lock = Mutex()
 
-    suspend fun load() = withContext(Dispatchers.IO) {
-        bridge.load(modelFile.absolutePath, ctx.cacheDir.path, vision = multimodal)
+    var backend = "CPU"; private set
+    suspend fun load(tryGpu: Boolean = false) = withContext(Dispatchers.IO) {
+        bridge.load(modelFile.absolutePath, ctx.cacheDir.path, vision = multimodal, tryGpu = tryGpu)
+        backend = bridge.backendName
     }
 
     fun close() = bridge.close()

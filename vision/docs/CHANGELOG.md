@@ -35,3 +35,7 @@
 
 ## Model checksums refreshed
 - Qwen3 0.6B and Qwen3 4B were re-uploaded upstream (new size and SHA-256), so downloads failed verification. Manifest updated from a live comparison of all 8 model entries against Hugging Face (the other six matched). The comparison now runs in the 'VISION resolve resource hashes' workflow.
+
+## Chat survives tab switches; GPU option
+- The chat session is now app-wide, so changing tabs no longer cancels thinking or processing; the answer is ready (and spoken) when it finishes.
+- Language model tries the GPU first (setting, default on), compiles it with a test prompt inside a crash guard, falls back to CPU on failure or after a crash. Backend shown in the model label.

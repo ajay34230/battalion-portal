@@ -22,6 +22,8 @@ object Prefs {
     /** true (default): talk with the phone's own speech recogniser and voice. false: VISION's downloaded offline Vosk model, if installed. */
     fun phoneVoice(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("phone_voice", true)
     fun setPhoneVoice(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("phone_voice", v).apply()
+    fun useGpu(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("use_gpu", true)
+    fun setUseGpu(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("use_gpu", v).apply()
     fun voiceOnly(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("voice_only", true)
     fun setVoiceOnly(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_only", v).apply()
     fun wakeWord(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("wake_word", false)

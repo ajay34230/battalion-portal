@@ -71,8 +71,7 @@ private fun orbCaption(s: OrbState) = when (s) {
 @Composable
 fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequest: (String) -> Unit = {}, unlockedText: String? = null, onClose: () -> Unit) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val session = remember { AssistantSession(app, ctx, scope) }
+    val session = remember { app.assistant }
     val messages by app.database.chat().all().collectAsState(initial = emptyList())
     val orb by session.orb.collectAsState()
     val level by session.level.collectAsState()
@@ -118,7 +117,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
     LaunchedEffect(hindi) { session.hindiMic = hindi }
     LaunchedEffect(speak) { session.speakReplies = speak; if (!speak) session.stopSpeaking() }
     LaunchedEffect(messages.size) { if (messages.isNotEmpty() && !overlay) listState.animateScrollToItem(messages.size - 1) }
-    DisposableEffect(Unit) { onDispose { session.shutdown() } }
+    DisposableEffect(Unit) { onDispose { session.stopListening() } } // thinking and the pending answer keep running
 
     if (overlay) {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xCC02060C), Color(0xF2040A14)))).clickable(onClick = onClose), contentAlignment = Alignment.Center) {

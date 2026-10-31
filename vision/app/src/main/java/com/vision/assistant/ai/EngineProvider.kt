@@ -31,7 +31,7 @@ class EngineProvider(private val app: VisionApp) {
     /** Models that crashed or failed to load on this phone; skipped automatically so a too-big model can never lock the app in a crash loop. */
     fun badModels(): Set<String> = prefs.getStringSet("bad", emptySet()) ?: emptySet()
     private fun markBad(id: String) { prefs.edit().putStringSet("bad", badModels() + id).apply() }
-    fun clearBad(id: String) { prefs.edit().putStringSet("bad", badModels() - id).apply() }
+    fun clearBad(id: String) { prefs.edit().putStringSet("bad", badModels() - id).putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) - id).apply() }
 
     private fun installed(needImage: Boolean): ResourceEntry? {
         val mgr = Downloads.manager(app)
@@ -45,7 +45,10 @@ class EngineProvider(private val app: VisionApp) {
     private suspend fun select(needImage: Boolean): LlmEngine? {
       mutex.withLock {
         // If the process died while a model was loading (out of memory), blame that model and skip it from now on.
-        prefs.getString("loading", null)?.let { markBad(it); prefs.edit().remove("loading").apply() }
+        // A crash while the GPU was being tried is the GPU's fault, not the model's: remember that and use the CPU for it next time.
+        val gpuTry = prefs.getString("loading_gpu", null)
+        if (gpuTry != null) { prefs.edit().putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) + gpuTry).remove("loading_gpu").remove("loading").apply() }
+        else prefs.getString("loading", null)?.let { markBad(it); prefs.edit().remove("loading").apply() }
         while (true) {
             val entry = installed(needImage)
             if (entry == null) {
@@ -57,13 +60,14 @@ class EngineProvider(private val app: VisionApp) {
             if (currentId == entry.id && current != null) return current!!
             (current as? LiteRtLmEngine)?.close()
             label.value = "Loading ${entry.title}…"
-            prefs.edit().putString("loading", entry.id).commit()
+            val useGpu = com.vision.assistant.research.Prefs.useGpu(app) && entry.id !in (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet())
+            prefs.edit().putString("loading", entry.id).also { if (useGpu) it.putString("loading_gpu", entry.id) }.commit()
             try {
                 val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
-                e.load()
-                prefs.edit().remove("loading").apply()
+                e.load(tryGpu = useGpu)
+                prefs.edit().remove("loading").remove("loading_gpu").apply()
                 current = e; currentId = entry.id; lastError = null
-                label.value = entry.title
+                label.value = entry.title + " · " + e.backend
                 return e
             } catch (t: Throwable) {
                 prefs.edit().remove("loading").apply()

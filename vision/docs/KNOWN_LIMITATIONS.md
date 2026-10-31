@@ -30,3 +30,5 @@ Everything below that touches hardware, the lock screen, audio or a downloaded m
 
 - **Voice matching is a convenience, not security.** Recordings can pass; colds, noise and distance can make it miss you. Thresholds are untuned (no phone testing yet), so Loose/Normal/Strict may need adjusting. It never unlocks the phone.
 - Android requires you to tap Allow for every permission and to switch on Notification access yourself; VISION can only open the right screen.
+
+- **Model speed.** Models run on the CPU unless the GPU path works on your phone (Settings → GPU, on by default, automatic CPU fallback). Gemma 4 E2B on a Snapdragon 870 CPU is slow; GPU speed-up is unverified on your iQOO 7. Smaller models (Qwen3 1.7B, Qwen3.5 2B) are much faster than Gemma 4 on CPU.

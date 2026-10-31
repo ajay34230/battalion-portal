@@ -105,6 +105,8 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
             if (!micOk) "Needs the microphone permission first." else if (!voskOk) "Needs the offline English voice model (More → Models & downloads)." else "Say “Hey Vision”, wait for “Yes?”, then speak.", wake, enabled = micOk && voskOk) {
             wake = it; Prefs.setWakeWord(ctx, it); if (it) com.vision.assistant.service.WakeWordService.start(ctx) else com.vision.assistant.service.WakeWordService.stop(ctx)
         }
+        var gpu by remember { mutableStateOf(Prefs.useGpu(ctx)) }
+        ToggleRow("Use the phone's GPU for the language model", "Much faster for big models like Gemma 4. If the GPU fails or crashes VISION falls back to the CPU by itself. Takes effect the next time the model loads (restart the app). The Home screen shows GPU or CPU next to the model name.", gpu) { gpu = it; Prefs.setUseGpu(ctx, it) }
         var phoneVoice by remember { mutableStateOf(Prefs.phoneVoice(ctx)) }
         ToggleRow("Use my phone's built-in voice", "Talk using the speech recogniser and voice already on your phone (Google/vivo). Turn off to use VISION's downloaded offline model instead.", phoneVoice) { phoneVoice = it; Prefs.setPhoneVoice(ctx, it) }
         Text("Optional Brave Search API key (free at brave.com/search/api) for better web results. Without any key VISION uses DuckDuckGo + Wikipedia.", style = MaterialTheme.typography.bodySmall)

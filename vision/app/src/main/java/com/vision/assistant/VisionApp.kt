@@ -39,5 +39,7 @@ class VisionApp : Application() {
     val database: VisionDatabase by lazy { VisionDatabase.build(this) }
     val deviceProfile: DeviceProfile by lazy { DeviceProfiler(this).profile() }
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /** One conversation that lives as long as the app: switching tabs never interrupts thinking, so the answer is ready (and spoken) when it finishes. */
+    val assistant: com.vision.assistant.ai.AssistantSession by lazy { com.vision.assistant.ai.AssistantSession(this, this, CoroutineScope(SupervisorJob() + Dispatchers.Main)) }
     val engines: EngineProvider by lazy { EngineProvider(this) }
 }
