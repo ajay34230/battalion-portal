@@ -25,3 +25,7 @@
 - Coding Studio: Git buttons (Termux), restricted Terminal tab (allow-list, no Advanced mode), Notes tab (NOTES.md), Visual test panel (screenshots at 360/412/768 px + layout checks).
 - Money: payment capture from notifications (PhonePe, Paytm, GPay, bank alerts), category + place confirmation, daily review prompt at a time you choose, spend summaries by voice/chat, Gmail read-only sync (needs your OAuth client, docs/GMAIL_SETUP.md).
 - Fixed: calendar phrases no longer swallow "remind me ... my schedule".
+
+## Voice enrolment and startup permissions
+- Voice setup (Home banner / More → Voice setup): say Hey Vision / Vision / Hi Vision; a voiceprint (numbers only) is kept on the phone and the wake word can answer only to a matching voice (Vosk speaker model, 14 MB, SHA-256 verified). Strictness Loose/Normal/Strict; delete anytime.
+- Startup permission centre: one button for microphone, notifications, contacts, calendar; guided links for Notification access, battery and Termux control.

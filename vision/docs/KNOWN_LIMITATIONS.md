@@ -27,3 +27,6 @@ Everything below that touches hardware, the lock screen, audio or a downloaded m
 - **Wake word** drains battery, cannot start from the background on Android 14, and false triggers are possible.
 - Qwen3.5 9B is experimental on an 8 GB phone.
 - GitHub Actions artifact storage quota was hit once; a build can pass but fail to upload artifacts until the quota resets.
+
+- **Voice matching is a convenience, not security.** Recordings can pass; colds, noise and distance can make it miss you. Thresholds are untuned (no phone testing yet), so Loose/Normal/Strict may need adjusting. It never unlocks the phone.
+- Android requires you to tap Allow for every permission and to switch on Notification access yourself; VISION can only open the right screen.

@@ -61,3 +61,6 @@ See KNOWN_LIMITATIONS.md and TEST_REPORT.md.
 | Gmail payment sync | Code complete; cannot work until you create the OAuth client (docs/GMAIL_SETUP.md); not tested against real Gmail |
 | Whisper / Piper voices | **Not built** (see KNOWN_LIMITATIONS.md); phone's own voice engines are used |
 | On-phone APK building | Not supported; cloud builds only |
+
+| Voice enrolment + speaker-checked wake word | Matching maths unit-tested; real recording/recognition NOT tested on a phone; thresholds untuned |
+| Startup permission centre | Compiles; not seen on a device |
