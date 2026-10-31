@@ -18,7 +18,7 @@ object Downloads {
         app.appScope.launch {
             val mgr = manager(app)
             setStatus(e.id, "downloading…")
-            val r = mgr.download(e) { d, t -> setStatus(e.id, if (t > 0) "${d * 100 / t}% (${d / 1_048_576} MB)" else "${d / 1_048_576} MB") }
+            val r = mgr.download(e, { d, t -> setStatus(e.id, if (t > 0) "${d * 100 / t}% (${d / 1_048_576} MB)" else "${d / 1_048_576} MB") }, { setStatus(e.id, it) })
             setStatus(e.id, when (r) {
                 is DownloadResult.Installed -> "installed & verified"
                 is DownloadResult.Unverified -> "downloaded but UNVERIFIED"

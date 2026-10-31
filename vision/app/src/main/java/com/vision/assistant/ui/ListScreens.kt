@@ -83,7 +83,10 @@ fun ModelsScreen(app: VisionApp, back: () -> Unit) {
         Text("This phone: tier ${app.deviceProfile.tier}, ${app.deviceProfile.totalRamMb} MB RAM, ${app.deviceProfile.freeStorageMb} MB free. A model counts as installed only after its SHA-256 matches the official value. Downloads keep going while VISION stays running and resume from where they stopped if interrupted.", style = MaterialTheme.typography.bodySmall)
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(ResourceManifest.entries) { e ->
-                val st = remember(status[e.id]) { mgr.state(e) }
+                // Hashing a multi-GB file must never run on the UI thread.
+                val st by androidx.compose.runtime.produceState(InstallState.NOT_INSTALLED, status[e.id]) {
+                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { mgr.state(e) }
+                }
                 Column {
                     Text("${e.title}")
                     Text("${e.sizeMb} MB · ${e.license} · ${e.languages}", style = MaterialTheme.typography.bodySmall)

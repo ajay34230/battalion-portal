@@ -51,7 +51,7 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
     }
 
     /** Resumable download. The caller must have shown the size and obtained the owner's approval. */
-    suspend fun download(e: ResourceEntry, onProgress: (Long, Long) -> Unit): DownloadResult = withContext(Dispatchers.IO) {
+    suspend fun download(e: ResourceEntry, onProgress: (Long, Long) -> Unit, onPhase: (String) -> Unit = {}): DownloadResult = withContext(Dispatchers.IO) {
         if (!compatible(e)) return@withContext DownloadResult.Failed("Not compatible with this device (RAM, storage or 32-bit CPU).")
         val p = part(e)
         try {
@@ -85,12 +85,13 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
             val t = file(e)
             t.delete()
             if (!p.renameTo(t)) return@withContext DownloadResult.Failed("Could not move file into place.")
+            onPhase("download finished, verifying checksum (can take a minute)…")
             val actual = Sha256.of(t)
             when {
                 e.sha256.isBlank() -> DownloadResult.Unverified(t, actual, "No official hash in the manifest.")
                 actual.equals(e.sha256, ignoreCase = true) -> {
                     marker(e).writeText(markerValue(e, t))
-                    if (e.fileName.endsWith(".zip")) unzip(e, t)
+                    if (e.fileName.endsWith(".zip")) { onPhase("unpacking…"); unzip(e, t) }
                     DownloadResult.Installed(t)
                 }
                 else -> { t.delete(); DownloadResult.Failed("Checksum mismatch; file deleted.") }
