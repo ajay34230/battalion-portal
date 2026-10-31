@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- outer glow ring -->
+    <path android:pathData="M54,54m-27,0a27,27 0 1,1 54,0a27,27 0 1,1 -54,0"
+        android:strokeColor="#3300E5FF" android:strokeWidth="6" android:fillColor="#00000000" />
+    <!-- main ring -->
+    <path android:pathData="M54,54m-26,0a26,26 0 1,1 52,0a26,26 0 1,1 -52,0"
+        android:strokeColor="#00E5FF" android:strokeWidth="2.4" android:fillColor="#00000000" />
+    <!-- inner violet arc -->
+    <path android:pathData="M54,54m-20,0a20,20 0 1,1 40,0"
+        android:strokeColor="#8E5CFF" android:strokeWidth="1.6" android:strokeLineCap="round" android:fillColor="#00000000" />
+    <!-- V -->
+    <path android:pathData="M41,43 L54,68 L67,43"
+        android:strokeColor="#E8FBFF" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />
+    <!-- eye / core -->
+    <path android:pathData="M54,40m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" android:fillColor="#00E5FF" />
+</vector>

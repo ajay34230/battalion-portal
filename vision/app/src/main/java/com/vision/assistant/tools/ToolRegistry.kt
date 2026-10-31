@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.first
 class ToolRegistry(private val app: VisionApp) {
     private val device = DeviceTools(app)
     private val research = ResearchTool(app)
+    private val termuxGateway = com.vision.assistant.termux.TermuxGateway(app)
 
     suspend fun execute(intent: Intent): ToolResult {
         val db = app.database
@@ -37,6 +38,7 @@ class ToolRegistry(private val app: VisionApp) {
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))
             }
             is Intent.Search -> research.run(intent.query)
+            is Intent.Termux -> termux(intent.line)
             is Intent.WhatsAppDraft -> device.whatsappDraft(intent.text)
             is Intent.ReadNotifications -> notifications(intent.whatsappOnly)
             Intent.ReadEmail -> ToolResult.Failure(Say(
@@ -45,6 +47,31 @@ class ToolRegistry(private val app: VisionApp) {
                 "Gmail जुड़ा नहीं है। साइन-इन के लिए Google OAuth क्लाइंट चाहिए जो इस बिल्ड में सेट नहीं है।"))
             is Intent.Chat -> ToolResult.Failure(Say("no tool"))
         }
+    }
+
+    private suspend fun termux(line: String): ToolResult {
+        val v = when (val r = com.vision.assistant.termux.CommandPolicy.validateLine(line, com.vision.assistant.termux.TermuxPrefs.advanced(app))) {
+            is com.vision.assistant.termux.Validation.Rejected -> return ToolResult.Failure(Say.plain("Termux command not allowed: ${r.reason} (Advanced mode in the Termux screen allows any command, always with your confirmation.)"))
+            is com.vision.assistant.termux.Validation.Ok -> r
+        }
+        if (!termuxGateway.isInstalled()) return ToolResult.Failure(Say.plain("Termux isn't installed. Install it from F-Droid or termux/termux-app on GitHub, then open the Termux screen in VISION for setup."))
+        if (androidx.core.content.ContextCompat.checkSelfPermission(app, "com.termux.permission.RUN_COMMAND") != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            return ToolResult.NeedsPermission("com.termux.permission.RUN_COMMAND", Say.plain("I need permission to send commands to Termux."))
+        val shown = (listOf(v.binary) + v.args).joinToString(" ")
+        if (v.sensitive) return ToolResult.NeedsConfirmation(Say.plain((if (v.high) "⚠ " else "") + "Run in Termux: $shown ?"), "termux") { runTermux(v, shown) }
+        return runTermux(v, shown)
+    }
+
+    private suspend fun runTermux(v: com.vision.assistant.termux.Validation.Ok, shown: String): ToolResult {
+        val res = termuxGateway.execute(v)
+        val out = res.getOrNull()
+        val r = when {
+            out == null -> ToolResult.Failure(Say.plain(res.exceptionOrNull()?.message ?: "Termux failed."))
+            out.startsWith("exit=0") -> ToolResult.Success(Say.plain(out.removePrefix("exit=0").trim().ifBlank { "Done." }.take(1500)))
+            else -> ToolResult.Failure(Say.plain("Command failed:\n" + out.take(1500) + (if (!termuxGateway.apiInstalled() && v.binary.startsWith("termux-")) "\n(Termux:API app is not installed.)" else "")))
+        }
+        audit("termux", shown, r)
+        return r
     }
 
     private suspend fun notifications(whatsappOnly: Boolean): ToolResult {

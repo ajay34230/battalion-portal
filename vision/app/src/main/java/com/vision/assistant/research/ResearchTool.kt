@@ -9,17 +9,25 @@ import com.vision.assistant.data.MemoryItem
 import com.vision.assistant.tools.Say
 import com.vision.assistant.tools.ToolResult
 import java.net.URL
+import com.vision.assistant.tools.Untrusted
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 object Prefs {
     fun searxngUrl(ctx: Context): String =
         ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getString("searxng_url", "") ?: ""
+    fun braveKey(ctx: Context): String =
+        ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getString("brave_key", "") ?: ""
+    fun setBraveKey(ctx: Context, v: String) =
+        ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putString("brave_key", v.trim()).apply()
     fun setSearxngUrl(ctx: Context, v: String) =
         ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putString("searxng_url", v.trim()).apply()
 }
 
-/** Search -> fetch (robots.txt respected) -> extract -> extractive summary with source URLs. No LLM needed. */
+/** Search -> fetch (robots.txt respected) -> extract -> summary (language model if installed, else extractive) with numbered sources. */
 class ResearchTool(private val app: VisionApp) {
     suspend fun run(query: String): ToolResult = withContext(Dispatchers.IO) {
         if (!NetworkMonitor.isOnline(app)) {
@@ -34,24 +42,40 @@ class ResearchTool(private val app: VisionApp) {
         }
         try {
             val lang = LanguageDetector.detect(query)
-            val custom = Prefs.searxngUrl(app)
-            val provider: SearchProvider = if (custom.isNotBlank()) SearxngSearch(custom) else WikipediaSearch(if (lang == Lang.HI) "hi" else "en")
-            val hits = provider.search(query, 4)
-            if (hits.isEmpty()) return@withContext ToolResult.Failure(Say("No results for \"$query\" from ${provider.name}.", "\"$query\" ke liye ${provider.name} par kuch nahi mila.", "\"$query\" के लिए ${provider.name} पर कुछ नहीं मिला।"))
-
-            val sb = StringBuilder()
+            val hits = LinkedHashMap<String, SearchHit>()
             val used = mutableListOf<String>()
-            for (h in hits.take(3)) {
-                val page = fetch(h.url)
-                val summary = page?.let { TextExtractor.leadSentences(it.text, 3) }.orEmpty().ifBlank { h.snippet }
-                if (summary.isBlank()) continue
-                sb.append("• ").append(h.title).append(": ").append(summary).append('\n')
-                used += h.url
+            // Web providers in order of quality; the first that answers wins. Wikipedia is always added for grounding.
+            val web = buildList<SearchProvider> {
+                Prefs.searxngUrl(app).takeIf { it.isNotBlank() }?.let { add(SearxngSearch(it)) }
+                Prefs.braveKey(app).takeIf { it.isNotBlank() }?.let { add(BraveSearch(it)) }
+                add(DuckDuckGoSearch())
             }
-            if (used.isEmpty()) return@withContext ToolResult.Failure(Say("I found results but couldn't read any page (blocked or empty)."))
-            val body = sb.toString().trim() + "\n\nSources (via ${provider.name}):\n" + used.joinToString("\n")
-            app.database.memory().insert(MemoryItem(category = "research", content = "Q: $query\n$body", source = used.first()))
-            ToolResult.Success(Say.plain(body))
+            for (p in web) {
+                val r = try { p.search(query, 6) } catch (_: Exception) { emptyList() }
+                if (r.isNotEmpty()) { r.forEach { hits.putIfAbsent(it.url, it) }; used += p.name; break }
+            }
+            val wiki = WikipediaSearch(if (lang == Lang.HI) "hi" else "en")
+            try { wiki.search(query, 2).forEach { hits.putIfAbsent(it.url, it) }; used += wiki.name } catch (_: Exception) {}
+            if (hits.isEmpty()) return@withContext ToolResult.Failure(Say("No results for \"$query\".", "\"$query\" ke liye kuch nahi mila.", "\"$query\" के लिए कुछ नहीं मिला।"))
+
+            // Read up to 6 pages in parallel (robots.txt respected).
+            val pages = coroutineScope {
+                hits.values.take(6).map { h -> async { h to fetch(h.url) } }.awaitAll()
+            }
+            val sources = pages.mapNotNull { (h, page) ->
+                val body = Untrusted.sanitize(page?.text.orEmpty()).take(1800).ifBlank { h.snippet }
+                if (body.isBlank()) null else Triple(h, body, page?.title?.ifBlank { null } ?: h.title)
+            }
+            if (sources.isEmpty()) return@withContext ToolResult.Failure(Say("I found results but couldn't read any page (blocked or empty)."))
+
+            val material = sources.mapIndexed { i, (h, body, title) -> "[${i + 1}] $title (${URL(h.url).host})\n$body" }.joinToString("\n\n").take(7000)
+            val engine = app.engines.current()
+            val summary = try { engine.summarize(query, material, lang) } catch (_: Throwable) { null }
+                ?: sources.take(3).joinToString("\n") { (_, body, title) -> "• $title: ${TextExtractor.leadSentences(body, 3)}" }
+            val list = sources.mapIndexed { i, (h, _, title) -> "[${i + 1}] $title — ${h.url}" }.joinToString("\n")
+            val out = summary.trim() + "\n\nSources (via ${used.joinToString(" + ")}):\n" + list
+            app.database.memory().insert(MemoryItem(category = "research", content = "Q: $query\n$out", source = sources.first().first.url))
+            ToolResult.Success(Say.plain(out))
         } catch (e: Exception) {
             ToolResult.Failure(Say("Research failed: ${e.message}", "Research fail ho gaya: ${e.message}", "खोज विफल: ${e.message}"))
         }

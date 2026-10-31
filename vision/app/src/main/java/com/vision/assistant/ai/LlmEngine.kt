@@ -9,6 +9,8 @@ interface LlmEngine {
     suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String
     /** Neural engines understand the request themselves; the rule-based engine returns null. */
     suspend fun plan(userText: String): Plan? = null
+    /** Summarises untrusted source material for a question. Null = engine can't (caller uses an extractive summary). */
+    suspend fun summarize(query: String, material: String, lang: Lang): String? = null
 }
 
 /** Fallback used only when no model is installed (or loading failed). */

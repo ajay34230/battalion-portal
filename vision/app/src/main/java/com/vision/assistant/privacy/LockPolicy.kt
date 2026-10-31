@@ -36,7 +36,7 @@ object LockPolicy {
     fun allowedWhenLocked(i: Intent, s: LockSettings = LockSettings()): Boolean {
         if (!s.limitsEnabled) return true
         return when (i) {
-            is Intent.OpenApp -> s.allowApps
+            is Intent.OpenApp, is Intent.Termux -> s.allowApps
             is Intent.Call -> s.allowCalls
             is Intent.WhatsAppDraft -> s.allowMessages
             is Intent.ReadNotifications, Intent.ReadEmail -> s.allowNotifications

@@ -25,6 +25,11 @@ class Orchestrator(private val app: VisionApp) {
         val engine = app.engines.current()
 
         // The trained model understands the request; the rule parser is only the fallback.
+        if (Identity.isCreatorQuestion(userText)) {
+            val r = AgentReply(Identity.creatorAnswer(lang), lang)
+            db.chat().insert(ChatMessage(role = "assistant", text = r.text, lang = lang.code))
+            return r
+        }
         // Short, unambiguous commands skip the model entirely: instant answer, no battery/RAM cost.
         val ruleIntent = IntentParser.parse(userText)
         val fast = isFastCommand(ruleIntent)
@@ -52,7 +57,7 @@ class Orchestrator(private val app: VisionApp) {
     }
 
     private fun isFastCommand(i: Intent) = when (i) {
-        Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
+        is Intent.Termux, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
         is Intent.OpenApp -> i.app.trim().split(Regex("\\s+")).size <= 3
         is Intent.Call -> i.contact.trim().split(Regex("\\s+")).size <= 3
         else -> false

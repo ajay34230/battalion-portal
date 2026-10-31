@@ -61,6 +61,7 @@ private fun ToggleRow(title: String, sub: String, checked: Boolean, enabled: Boo
 fun SettingsScreen(app: VisionApp, back: () -> Unit) {
     val ctx = LocalContext.current
     var searx by remember { mutableStateOf(Prefs.searxngUrl(ctx)) }
+    var brave by remember { mutableStateOf(Prefs.braveKey(ctx)) }
     var msg by remember { mutableStateOf("") }
     var lock by remember { mutableStateOf(LockPrefs.load(ctx)) }
     fun upd(n: LockSettings) { lock = n; LockPrefs.save(ctx, n) }
@@ -97,7 +98,9 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         Text("Search", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
         Text("Optional SearXNG server (must have JSON output enabled). Empty = Wikipedia.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
-        Button(onClick = { Prefs.setSearxngUrl(ctx, searx); msg = "Saved." }) { Text("Save") }
+        Text("Optional Brave Search API key (free at brave.com/search/api) for better web results. Without any key VISION uses DuckDuckGo + Wikipedia.", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(brave, { brave = it }, Modifier.fillMaxWidth(), label = { Text("Brave API key") }, singleLine = true)
+        Button(onClick = { Prefs.setSearxngUrl(ctx, searx); Prefs.setBraveKey(ctx, brave); msg = "Saved." }) { Text("Save") }
         if (msg.isNotBlank()) Text(msg)
         OutlinedButton(onClick = back) { Text("Back") }
     }
@@ -126,47 +129,81 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun TermuxScreen(app: VisionApp, back: () -> Unit) {
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
     val gateway = remember { TermuxGateway(ctx) }
     val out by TermuxResults.last.collectAsState()
-    var script by remember { mutableStateOf("") }
+    var line by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
+    var advanced by remember { mutableStateOf(com.vision.assistant.termux.TermuxPrefs.advanced(ctx)) }
     var pending by remember { mutableStateOf<Validation.Ok?>(null) }
-    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> msg = if (ok) "Permission granted. Tap the command again." else "Permission denied." }
+    var retry by remember { mutableStateOf<String?>(null) }
+    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        msg = if (ok) "Permission granted." else "Permission denied."
+        if (ok) retry?.let { l -> retry = null; line = l }
+    }
+    val home = CommandPolicy.HOME
 
-    fun go(cmd: String, args: List<String>) {
-        if (ContextCompat.checkSelfPermission(ctx, "com.termux.permission.RUN_COMMAND") != android.content.pm.PackageManager.PERMISSION_GRANTED) { perm.launch("com.termux.permission.RUN_COMMAND"); return }
-        when (val v = CommandPolicy.validate(cmd, args)) {
+    fun exec(v: Validation.Ok) { msg = "Running…"; scope.launch { val r = gateway.execute(v); msg = r.fold({ "Done." }, { it.message ?: "Failed." }) } }
+    fun go(l: String) {
+        if (ContextCompat.checkSelfPermission(ctx, "com.termux.permission.RUN_COMMAND") != android.content.pm.PackageManager.PERMISSION_GRANTED) { retry = l; perm.launch("com.termux.permission.RUN_COMMAND"); return }
+        when (val v = CommandPolicy.validateLine(l, advanced)) {
             is Validation.Rejected -> msg = "Rejected: ${v.reason}"
-            is Validation.Ok -> if (v.sensitive) pending = v else msg = gateway.run(v) ?: "Sent to Termux."
+            is Validation.Ok -> if (v.sensitive) pending = v else exec(v)
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Termux", style = MaterialTheme.typography.headlineSmall)
-        Text(if (gateway.isInstalled()) "Termux is installed." else "Termux is not installed. Install it from F-Droid or the official GitHub releases (termux/termux-app), not Google Play. VISION works without it.", style = MaterialTheme.typography.bodySmall)
-        Text("In Termux run once: mkdir -p ~/.termux ~/vision-scripts && echo 'allow-external-apps=true' >> ~/.termux/termux.properties, then restart Termux.", style = MaterialTheme.typography.bodySmall)
-        Text("Only allow-listed commands run, each with a 30 s limit:", style = MaterialTheme.typography.bodySmall)
+        Text(
+            (if (gateway.isInstalled()) "Termux: installed. " else "Termux: NOT installed (get it from F-Droid or github.com/termux/termux-app, not Google Play). ") +
+                (if (gateway.apiInstalled()) "Termux:API: installed." else "Termux:API app: not installed (needed for torch, camera, location, SMS, volume…; install it from the same source as Termux)."),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Text("One-time setup: open Termux, paste this, then close and reopen Termux:", style = MaterialTheme.typography.titleSmall, color = VisionColors.Cyan)
+        androidx.compose.foundation.text.selection.SelectionContainer { Text(TermuxGateway.SETUP, style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { go("uname", listOf("-a")) }) { Text("uname -a") }
-            OutlinedButton(onClick = { go("date", emptyList()) }) { Text("date") }
-            OutlinedButton(onClick = { go("ls", listOf("${CommandPolicy.HOME}/vision-scripts")) }) { Text("list scripts") }
+            OutlinedButton(onClick = {
+                (ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("termux-setup", TermuxGateway.SETUP)); msg = "Setup command copied."
+            }) { Text("Copy setup") }
+            OutlinedButton(onClick = { ctx.packageManager.getLaunchIntentForPackage("com.termux")?.let { ctx.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } ?: run { msg = "Termux is not installed." } }) { Text("Open Termux") }
         }
-        OutlinedTextField(script, { script = it }, Modifier.fillMaxWidth(), label = { Text("Script in ~/vision-scripts (name.py)") }, singleLine = true)
-        Button(onClick = { go("python3", listOf(script.trim())) }) { Text("Run script (asks to confirm)") }
+
+        Text("Quick actions", style = MaterialTheme.typography.titleSmall, color = VisionColors.Cyan)
+        val quick = listOf(
+            "Torch on" to "termux-torch on", "Torch off" to "termux-torch off", "Battery" to "termux-battery-status", "Wi-Fi" to "termux-wifi-connectioninfo",
+            "Location" to "termux-location", "Photo" to "termux-camera-photo -c 0 $home/vision-output/photo.jpg", "Clipboard" to "termux-clipboard-get",
+            "Volume 8" to "termux-volume music 8", "Vibrate" to "termux-vibrate -d 300", "Storage" to "df -h", "RAM" to "free -m", "Uptime" to "uptime",
+            "Scripts" to "ls $home/vision-scripts", "Contacts" to "termux-contact-list", "SMS list" to "termux-sms-list -l 5", "Date" to "date",
+        )
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            quick.forEach { (label, cmd) -> OutlinedButton(onClick = { go(cmd) }) { Text(label) } }
+        }
+
+        Text("Any command", style = MaterialTheme.typography.titleSmall, color = VisionColors.Cyan)
+        OutlinedTextField(line, { line = it }, Modifier.fillMaxWidth(), label = { Text("e.g. termux-tts-speak \"hello\"") }, singleLine = true)
+        Button(onClick = { go(line) }) { Text("Run") }
+        Row(Modifier.fillMaxWidth().glass(16).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                Text("Advanced: allow any shell command")
+                Text("Off = only the built-in command list. On = anything can be typed or requested by voice, but every non-listed command asks you to confirm the exact text first. Only enable if you understand shell commands.", style = MaterialTheme.typography.bodySmall, color = VisionColors.Muted)
+            }
+            androidx.compose.material3.Switch(checked = advanced, onCheckedChange = { advanced = it; com.vision.assistant.termux.TermuxPrefs.setAdvanced(ctx, it) })
+        }
         if (msg.isNotBlank()) Text(msg)
         Text("Last result:", style = MaterialTheme.typography.titleMedium)
-        Text(out.ifBlank { "(none yet)" }, style = MaterialTheme.typography.bodySmall)
+        androidx.compose.foundation.text.selection.SelectionContainer { Text(out.ifBlank { "(none yet)" }, style = MaterialTheme.typography.bodySmall) }
         OutlinedButton(onClick = back) { Text("Back") }
     }
     pending?.let { v ->
         AlertDialog(
             onDismissRequest = { pending = null },
-            title = { Text("Run this script in Termux?") },
-            text = { Text("${v.binary} ${v.args.joinToString(" ")}") },
-            confirmButton = { Button(onClick = { msg = gateway.run(v) ?: "Sent to Termux."; pending = null }) { Text("Run") } },
+            title = { Text(if (v.high) "⚠ Run this in Termux?" else "Run this in Termux?") },
+            text = { Text((listOf(v.binary) + v.args).joinToString(" ")) },
+            confirmButton = { Button(onClick = { exec(v); pending = null }) { Text("Run") } },
             dismissButton = { OutlinedButton(onClick = { pending = null }) { Text("Cancel") } },
         )
     }

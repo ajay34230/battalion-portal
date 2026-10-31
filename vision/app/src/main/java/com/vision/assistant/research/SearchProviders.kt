@@ -61,3 +61,54 @@ class SearxngSearch(private val baseUrl: String) : SearchProvider {
         }
     }
 }
+
+/** Brave Search API (needs the owner's own free API key from brave.com/search/api). */
+class BraveSearch(private val apiKey: String) : SearchProvider {
+    override val name = "Brave Search"
+    override suspend fun search(query: String, max: Int): List<SearchHit> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val c = (URL("https://api.search.brave.com/res/v1/web/search?q=$q&count=$max") .openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10_000; readTimeout = 15_000
+            setRequestProperty("Accept", "application/json"); setRequestProperty("X-Subscription-Token", apiKey)
+        }
+        if (c.responseCode !in 200..299) error("Brave HTTP ${c.responseCode}")
+        return parse(c.inputStream.use { it.readNBytes(2_000_000).toString(Charsets.UTF_8) }, max)
+    }
+
+    companion object {
+        fun parse(json: String, max: Int): List<SearchHit> {
+            val arr = JSONObject(json).optJSONObject("web")?.optJSONArray("results") ?: return emptyList()
+            return (0 until minOf(arr.length(), max)).map {
+                val o = arr.getJSONObject(it)
+                SearchHit(o.optString("title"), o.getString("url"), o.optString("description").replace(Regex("<[^>]+>"), ""))
+            }
+        }
+    }
+}
+
+/** Keyless general web search through DuckDuckGo's HTML page. Best effort: DuckDuckGo may throttle or change the page. */
+class DuckDuckGoSearch : SearchProvider {
+    override val name = "DuckDuckGo"
+    override suspend fun search(query: String, max: Int): List<SearchHit> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        return parse(httpGet("https://html.duckduckgo.com/html/?q=$q", "text/html"), max)
+    }
+
+    companion object {
+        fun parse(html: String, max: Int): List<SearchHit> {
+            val doc = org.jsoup.Jsoup.parse(html)
+            return doc.select("div.result").mapNotNull { r ->
+                val a = r.selectFirst("a.result__a") ?: return@mapNotNull null
+                val url = realUrl(a.attr("href")) ?: return@mapNotNull null
+                SearchHit(a.text().trim(), url, r.selectFirst(".result__snippet")?.text()?.trim().orEmpty())
+            }.filter { !it.url.contains("duckduckgo.com") }.take(max)
+        }
+
+        fun realUrl(href: String): String? {
+            val h = if (href.startsWith("//")) "https:$href" else href
+            val m = Regex("[?&]uddg=([^&]+)").find(h)
+            val u = if (m != null) java.net.URLDecoder.decode(m.groupValues[1], "UTF-8") else h
+            return u.takeIf { it.startsWith("http") }
+        }
+    }
+}

@@ -76,12 +76,14 @@ fun HomeScreen(app: VisionApp, go: (String) -> Unit) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.height(8.dp))
+                VisionLogo(72.dp)
                 Text("V I S I O N", fontSize = 30.sp, fontWeight = FontWeight.Light, color = VisionColors.Cyan,
                     style = MaterialTheme.typography.headlineLarge.copy(shadow = Shadow(VisionColors.Cyan, blurRadius = 28f)))
                 Text(engineLabel, color = VisionColors.Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(10.dp))
                 JarvisOrb(OrbState.IDLE, 0f, Modifier.size(270.dp).clip(CircleShape).clickable { go(Routes.CHAT) })
                 Text("Tap the orb to talk", color = VisionColors.Muted, fontSize = 12.sp, letterSpacing = 3.sp)
+                Text("Built with gratitude by ${com.vision.assistant.ai.Identity.CREATOR}", color = VisionColors.Cyan.copy(alpha = 0.8f), fontSize = 11.sp, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
             }
         }

@@ -1,5 +1,7 @@
 package com.vision.assistant.ai
 
+import com.vision.assistant.termux.CommandPolicy
+
 data class ParsedTime(val dayOffset: Int, val hour: Int, val minute: Int)
 
 sealed interface Intent {
@@ -11,6 +13,7 @@ sealed interface Intent {
     data class Recall(val query: String) : Intent
     data class WhatsAppDraft(val text: String) : Intent
     data class ReadNotifications(val whatsappOnly: Boolean) : Intent
+    data class Termux(val line: String) : Intent
     data object ReadEmail : Intent
     data object AskTime : Intent
     data object AskBattery : Intent
@@ -51,13 +54,30 @@ object IntentParser {
         if (Regex("read (my )?notifications|notifications (batao|padho|sunao)|meri notifications").containsMatchIn(l)) return Intent.ReadNotifications(false)
         if (Regex("(unread )?e-?mails?|gmail|mail (batao|padho)").containsMatchIn(l)) return Intent.ReadEmail
 
+        Regex("^(?:termux|run in termux|run command|terminal)\\s+(.+)$", RegexOption.IGNORE_CASE).find(t)?.let { return Intent.Termux(it.groupValues[1].trim()) }
+        val home = CommandPolicy.HOME
+        if (Regex("torch|flash ?light|टॉर्च").containsMatchIn(l)) {
+            val on = Regex("\\bon\\b|jala|chalu|start|चालू|जला").containsMatchIn(l)
+            val off = Regex("\\boff\\b|band|bujha|stop|बंद|बुझा").containsMatchIn(l)
+            if (on != off) return Intent.Termux("termux-torch " + if (on) "on" else "off")
+        }
+        if (Regex("my location|where am i|meri location|location batao|main kahan|मेरी लोकेशन").containsMatchIn(l)) return Intent.Termux("termux-location")
+        if (Regex("wi-?fi (info|status|name)|which wi-?fi|kaunsa wi-?fi").containsMatchIn(l)) return Intent.Termux("termux-wifi-connectioninfo")
+        if (Regex("clipboard|copied text|kya copy kiya").containsMatchIn(l)) return Intent.Termux("termux-clipboard-get")
+        if (Regex("take a (photo|picture|selfie)|photo (kheench|le)|selfie").containsMatchIn(l)) return Intent.Termux("termux-camera-photo -c ${if (l.contains("selfie")) 1 else 0} $home/vision-output/photo.jpg")
+        Regex("volume\\s+(\\d{1,2})").find(l)?.let { return Intent.Termux("termux-volume music ${it.groupValues[1].toInt().coerceIn(0, 15)}") }
+        Regex("brightness\\s+(\\d{1,3})").find(l)?.let { return Intent.Termux("termux-brightness ${(it.groupValues[1].toInt().coerceIn(0, 100) * 255 / 100)}") }
+        if (Regex("disk space|storage left|kitni storage|free space").containsMatchIn(l)) return Intent.Termux("df -h")
+        if (Regex("\\bram\\b|memory usage").containsMatchIn(l)) return Intent.Termux("free -m")
+        if (Regex("uptime|phone kab se on").containsMatchIn(l)) return Intent.Termux("uptime")
+
         Regex("^(?:call|dial|phone)\\s+(.+)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }
         Regex("^(.+?)\\s+(?:ko\\s+)?(?:phone|call)\\s*(?:karo|kar do|lagao|laga do)$").find(l)?.let { return Intent.Call(clean(it.groupValues[1])) }
 
         Regex("^(?:open|launch|start|kholo|khol do)\\s+(.+)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
         Regex("^(.+?)\\s+(?:kholo|khol do|open karo|khol|chalu karo|खोलो|खोल दो)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
 
-        Regex("^(?:search|research|find|look up|dhundo|khojo|dhoondo)\\s+(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
+        Regex("^(?:search|research|find|look up|summari[sz]e|dhundo|khojo|dhoondo)\\s+(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
         Regex("^(?:mujhe\\s+)?batao\\s+(?:ki\\s+)?(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
 
         return Intent.Chat(t)
