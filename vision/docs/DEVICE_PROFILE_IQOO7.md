@@ -1,5 +1,9 @@
 # Primary target device: iQOO 7
 
+**Owner-reported specs (from the phone's About screen):** Snapdragon 870 octa-core (3.2 GHz), 8 GB RAM + 8 GB "extended RAM", 128 GB storage, Android 14.
+- The "+8 GB" is virtual RAM: a swap file on flash storage, much slower than real RAM. VISION plans with the 8 GB of real memory only.
+- Android 14 rules that matter here: foreground-service types (declared for microphone and downloads), background activity-start limits (VISION opens from the tile, notification or assistant gesture), and vivo/iQOO's aggressive background management (allow VISION under Battery → background power consumption and auto-start, or downloads and reminders may be killed).
+
 Official specification (not measured): Snapdragon 870, Adreno 650, 8 GB or 12 GB RAM, 128/256 GB storage, 4400 mAh, shipped with Android 11.
 VISION does **not** assume which variant or Android/Funtouch version you own: the app's "This phone" screen reads the real RAM, storage, ABI and tier at runtime,
 and model downloads are blocked when a model does not fit (a model may use at most 40% of RAM).
