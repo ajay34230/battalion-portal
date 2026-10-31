@@ -23,6 +23,8 @@ jobs:
       - name: Unit tests and debug APK
         run: |
           set +e
+          mkdir -p "$RUNNER_TEMP/accept"
+          export VISION_TEMPLATE_OUT="$RUNNER_TEMP/accept"
           gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug assembleRelease 2>&1 | tee build.log
           code=${PIPESTATUS[0]}
           if [ $code -ne 0 ]; then
@@ -32,6 +34,30 @@ jobs:
             echo "::notice title=VISION::GRADLE_BUILD_AND_TESTS_OK"
           fi
           exit $code
+      - name: Coding acceptance tests (really executed with Node and Python)
+        run: |
+          set -e
+          A="$RUNNER_TEMP/accept"
+          ls -R "$A" | head -40
+          echo "== A. calculator logic (node) =="; (cd "$A/calculator" && node test.js)
+          echo "== A. calculator keyboard/DOM smoke (node + jsdom-free stub) =="; (cd "$A/calculator" && node -e "global.document={getElementById:()=>({}),querySelectorAll:()=>[],addEventListener:()=>{}};const {createCalculator}=require('./calc.js');global.createCalculator=createCalculator;require('vm');new Function('createCalculator', require('fs').readFileSync('app.js','utf8'))(createCalculator);console.log('app.js loads')")
+          echo "== B. python utility on sample file =="; (cd "$A/csv-report" && python3 report.py sample.csv && python3 test_report.py -v)
+          echo "== C. website: all pages exist and every local link resolves =="; (cd "$A/website" && python3 - <<'PY'
+import re, os, sys
+pages=[f for f in os.listdir('.') if f.endswith('.html')]
+assert len(pages)>=3, pages
+bad=[]
+for p in pages:
+    t=open(p).read()
+    assert 'name="viewport"' in t, p+' lacks viewport'
+    for ref in re.findall(r'(?:href|src)="([^"#?]+)"', t):
+        if ref.startswith(('http','mailto:')): continue
+        if not os.path.exists(ref): bad.append((p,ref))
+css=open('css/site.css').read(); assert '@media' in css
+print('pages:',pages,'broken links:',bad); sys.exit(1 if bad else 0)
+PY
+)
+        working-directory: .
       - name: Publish debug APK as a prerelease
         if: github.ref == 'refs/heads/vision/phase-0'
         continue-on-error: true
