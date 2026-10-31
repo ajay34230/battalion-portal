@@ -94,11 +94,23 @@ jobs:
           for c in org.vosk.Recognizer org.vosk.SpeakerModel org.vosk.SpkModel; do
             javap -cp classes.jar $c 2>&1 | tr '\n' ' ' | sed 's/^/::notice title=VOSKAPI::/'; echo
           done
-      - name: LiteRT-LM Java API (streaming, thinking, history)
+      - name: llama.cpp Android example (release tag and layout)
         run: |
-          curl -sSfL -o l.aar https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/0.19.0/litertlm-android-0.19.0.aar && unzip -oq l.aar classes.jar
-          for c in Conversation ThinkingConfig EngineConfig Role Contents SessionConfig; do
-            javap -cp classes.jar com.google.ai.edge.litertlm.$c 2>&1 | grep -v "default\|static {}\|DefaultConstructorMarker\|hashCode\|equals\|component" | sed 's/com.google.ai.edge.litertlm.//g;s/java.lang.//g;s/java.util.//g' | tr -s ' ' | tr '\n' ' ' | cut -c1-1900 | sed "s/^/::notice title=LRT-$c::/"; echo
+          tag=$(curl -sSf https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | python3 -c "import sys,json;print(json.load(sys.stdin)['tag_name'])")
+          echo "::notice title=LLAMA-TAG::$tag"
+          curl -sSf "https://api.github.com/repos/ggml-org/llama.cpp/git/trees/$tag?recursive=1" | python3 -c "
+          import sys,json
+          t=json.load(sys.stdin)['tree']
+          p=[x['path']+(' '+str(x.get('size','')) if x['type']=='blob' else '') for x in t if x['path'].startswith('examples/llama.android')]
+          print('::notice title=LLAMA-ANDROID-TREE::'+' | '.join(p)[:3500])
+          "
+          echo "$tag" > tag.txt
+      - name: llama.cpp Android JNI sources
+        run: |
+          tag=$(cat tag.txt)
+          base=https://raw.githubusercontent.com/ggml-org/llama.cpp/$tag/examples/llama.android/lib
+          for f in build.gradle.kts src/main/cpp/CMakeLists.txt; do
+            echo "::notice title=LLAMA-FILE $f::$(curl -sSf $base/$f | head -c 6000 | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read()))')"
           done
       - name: Gradle plugin versions
         run: |
