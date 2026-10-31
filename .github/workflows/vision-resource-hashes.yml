@@ -94,6 +94,13 @@ jobs:
           for c in org.vosk.Recognizer org.vosk.SpeakerModel org.vosk.SpkModel; do
             javap -cp classes.jar $c 2>&1 | tr '\n' ' ' | sed 's/^/::notice title=VOSKAPI::/'; echo
           done
+      - name: LiteRT-LM Java API (streaming and cancel)
+        run: |
+          curl -sSfL -o l.aar https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/0.19.0/litertlm-android-0.19.0.aar && unzip -oq l.aar classes.jar
+          echo "::notice title=LITERT-CLASSES::$(unzip -l classes.jar | grep -o 'com/google/ai/edge/litertlm/[A-Za-z0-9$]*\.class' | grep -v '\$' | sed 's#.*/##;s#\.class##' | tr '\n' ' ' | cut -c1-1500)"
+          for c in Conversation Engine SamplerConfig MessageCallback Message ConversationConfig; do
+            javap -cp classes.jar com.google.ai.edge.litertlm.$c 2>&1 | tr '\n' ' ' | cut -c1-1800 | sed "s/^/::notice title=LITERT-$c::/"; echo
+          done
       - name: Gradle plugin versions
         run: |
           for u in \
