@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.room:room-runtime:$room")
     implementation("androidx.room:room-ktx:$room")
     kapt("androidx.room:room-compiler:$room")
+    kapt("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.21") // Room bundles an older reader that rejects Kotlin 2.4 metadata
 
     implementation("org.jsoup:jsoup:1.18.1")
     implementation(project(":litert"))
