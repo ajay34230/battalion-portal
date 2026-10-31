@@ -10,3 +10,10 @@ class MultiStepTest {
     @Test fun doesNotSplitNormalChat() = assertEquals(1, MultiStep.split("tell me a story and then explain why the sky is blue").size)
     @Test fun singleCommandUntouched() = assertEquals(1, MultiStep.split("open youtube").size)
 }
+
+class PlanWordsTest {
+    @Test fun resumeAndCancelPhrases() {
+        assertTrue(com.vision.assistant.ai.PlanState.resumeWords.matches("continue")); assertTrue(com.vision.assistant.ai.PlanState.resumeWords.matches("aage badho"))
+        assertTrue(com.vision.assistant.ai.PlanState.cancelWords.matches("cancel plan")); assertFalse(com.vision.assistant.ai.PlanState.resumeWords.matches("continue the story about dragons"))
+    }
+}

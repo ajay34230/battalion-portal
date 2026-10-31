@@ -11,3 +11,10 @@
 - Jarvis-style animated orb AI screen, aurora/glass UI, slow screen transitions, staggered home tiles.
 - `AssistActivity`: glowing assistant sheet over other apps and (optionally) the lock screen; Settings toggles for lock-screen behaviour (no limits by default).
 - Build fixes: Kotlin 2.4.21, kapt + Room 2.8.4 with kotlin-metadata-jvm 2.4.21, JDK 21 in CI.
+
+## Since last entry
+- Termux control (allow-listed commands, confirm tiers, Advanced mode), creator identity, stronger web search with summaries, background downloads with pause/resume/cancel.
+- Qwen3.5 0.8B/2B/4B and Gemma 4 E2B/E4B (image understanding), ML Kit OCR (English+Hindi), PDF reading.
+- Smart reminders (bills, birthdays, anniversaries); learning from the user; UI v2 with bottom navigation and animated avatar.
+- Coding Studio: project store with snapshots/rollback/ZIP, templates, static checks, safe fix loop, preview, Termux runner, developer research, tool inventory and guarded installer.
+- Setup & health screen, crash log, multi-step commands, deep/academic research, JSON export, phone-voice default.

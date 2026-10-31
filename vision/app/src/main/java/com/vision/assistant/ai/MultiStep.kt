@@ -10,3 +10,13 @@ object MultiStep {
         return if (parts.all { IntentParser.parse(it) !is Intent.Chat }) parts else listOf(text)
     }
 }
+
+/** Remaining steps of an interrupted multi-step request, saved on the phone so "continue" works even after the app restarts. */
+object PlanState {
+    private fun sp(ctx: android.content.Context) = ctx.getSharedPreferences("vision_plan", android.content.Context.MODE_PRIVATE)
+    fun save(ctx: android.content.Context, remaining: List<String>) = sp(ctx).edit().putString("remaining", org.json.JSONArray(remaining).toString()).apply()
+    fun load(ctx: android.content.Context): List<String> = try { org.json.JSONArray(sp(ctx).getString("remaining", "[]")).let { a -> (0 until a.length()).map { a.getString(it) } } } catch (_: Exception) { emptyList() }
+    fun clear(ctx: android.content.Context) = sp(ctx).edit().remove("remaining").apply()
+    val resumeWords = Regex("^(continue|resume|go on|carry on|next step|aage badho|aage badh|jaari rakho|जारी रखो|आगे बढ़ो)[.!]?$", RegexOption.IGNORE_CASE)
+    val cancelWords = Regex("^(cancel (the )?plan|forget the rest|baaki rehne do|baaki chhod do)[.!]?$", RegexOption.IGNORE_CASE)
+}

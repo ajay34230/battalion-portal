@@ -24,3 +24,19 @@ object Backup {
         return mem to tasks
     }
 }
+
+/** Writes a parsed export into the database, skipping memory lines that already exist and re-scheduling future reminders. */
+suspend fun restoreBackup(app: com.vision.assistant.VisionApp, json: String): String {
+    val (mem, tasks) = Backup.parse(json) ?: return "That file is not a VISION export."
+    val have = app.database.memory().list().map { it.content }.toSet()
+    var m = 0; var t = 0
+    for (x in mem) if (x.content !in have) { app.database.memory().insert(x); m++ }
+    val now = System.currentTimeMillis()
+    for (x in tasks) if (!x.done && (x.dueAt == null || x.dueAt >= now || !x.repeat.isNullOrBlank())) {
+        val due = x.dueAt?.let { d -> if (d < now && !x.repeat.isNullOrBlank()) com.vision.assistant.tasks.EventPlanner.nextAfter(x.repeat, now, java.util.Calendar.getInstance().apply { timeInMillis = d }.get(java.util.Calendar.HOUR_OF_DAY), java.util.Calendar.getInstance().apply { timeInMillis = d }.get(java.util.Calendar.MINUTE)) ?: d else d }
+        val item = x.copy(dueAt = due)
+        val id = app.database.tasks().insert(item); com.vision.assistant.tasks.ReminderScheduler.scheduleTask(app, item.copy(id = id)); t++
+    }
+    com.vision.assistant.ai.Learning.refresh(app.database.memory())
+    return "Restored $m memory item(s) and $t reminder(s)."
+}

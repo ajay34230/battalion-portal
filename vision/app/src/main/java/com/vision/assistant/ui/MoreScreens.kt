@@ -131,6 +131,12 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
                 } catch (t: Throwable) { msg = "Export failed: ${t.message}" }
             }
         }) { Text("Export my data (JSON)") }
+        val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) scope.launch {
+                msg = try { val text = ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().take(2_000_000).toByteArray().toString(Charsets.UTF_8) }.orEmpty(); com.vision.assistant.backup.restoreBackup(app, text) } catch (t: Throwable) { "Import failed: ${t.message}" }
+            }
+        }
+        OutlinedButton(onClick = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("Import a VISION export") }
         OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }) { Text("Notification access settings") }
         if (msg.isNotBlank()) Text(msg)
         Text("Action log (latest first)", style = MaterialTheme.typography.titleMedium)

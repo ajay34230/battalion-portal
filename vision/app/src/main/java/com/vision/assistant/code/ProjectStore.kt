@@ -23,7 +23,8 @@ class ProjectStore(val root: File) {
         fun validName(n: String) = NAME.matches(n.trim())
         /** Relative, forward-slash path with no traversal, no hidden folders, no absolute roots. */
         fun safeRelative(p: String): String? {
-            val s = p.trim().replace('\\', '/').trimStart('/')
+            val s = p.trim().replace('\\', '/')
+            if (s.startsWith("/")) return null // absolute paths are never accepted
             if (s.isEmpty() || s.length > 160) return null
             val parts = s.split('/')
             if (parts.any { it.isEmpty() || it == "." || it == ".." || it.startsWith(".") }) return null

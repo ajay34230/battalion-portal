@@ -25,15 +25,18 @@ class Orchestrator(private val app: VisionApp) {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         if (recordUser) db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
+        if (recordUser && PlanState.cancelWords.matches(userText.trim())) { PlanState.clear(app); return AgentReply(Say("Okay, dropped the remaining steps.", "Theek hai, baaki steps hata diye.", "ठीक है, बाकी चरण हटा दिए।").`in`(lang), lang) }
+        val resumed = if (recordUser && PlanState.resumeWords.matches(userText.trim())) PlanState.load(app).takeIf { it.isNotEmpty() } else null
         // "do A then B": run each recognised step in order; stop at the first one that fails or needs a confirmation/permission.
         if (recordUser) {
-            val steps = MultiStep.split(userText)
-            if (steps.size > 1) {
+            val steps = resumed ?: MultiStep.split(userText)
+            if (resumed != null) PlanState.clear(app)
+            if (steps.size > 1 || resumed != null) {
                 val replies = ArrayList<String>(); var last: AgentReply? = null
                 for ((i, step) in steps.withIndex()) {
                     val r = handle(step, locked, settings, recordUser = false)
                     replies.add("${i + 1}. ${r.text}"); last = r
-                    if (r.confirm != null || r.needsPermission != null || r.needsUnlock || r.needsImage != null) { replies.add(Say("Stopped here; the remaining steps were not run.", "Yahin ruka; baaki steps nahi chalaye.", "यहीं रुका; बाकी चरण नहीं चलाए।").`in`(lang)); break }
+                    if (r.confirm != null || r.needsPermission != null || r.needsUnlock || r.needsImage != null) { val rest = steps.drop(i + 1); if (rest.isNotEmpty()) PlanState.save(app, rest); replies.add(Say("Paused here. Say \"continue\" to run the remaining ${rest.size} step(s), or \"cancel plan\".", "Yahin ruka. Baaki ${rest.size} step ke liye \"continue\" bolein, ya \"cancel plan\".", "यहीं रुका। बाकी ${rest.size} चरण के लिए \"continue\" कहें, या \"cancel plan\"।").`in`(lang)); break }
                 }
                 val joined = AgentReply(replies.joinToString("\n"), lang, last?.confirm, last?.needsPermission, last?.needsUnlock ?: false, last?.needsImage, last?.needsDocument ?: false)
                 db.chat().insert(ChatMessage(role = "assistant", text = joined.text, lang = lang.code))

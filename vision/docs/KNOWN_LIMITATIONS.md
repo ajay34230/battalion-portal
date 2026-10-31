@@ -6,7 +6,7 @@ Everything below that touches hardware, the lock screen, audio or a downloaded m
 ## Not built
 - Hands-free "Hey Vision" wake word (needs a trained wake-word model + always-on service). Use the Quick Settings tile, the notification Speak button, or set VISION as the default digital assistant.
 - Gmail sign-in (OAuth client not configured; API client exists but cannot authenticate).
-- Embeddings / semantic memory search, PDF reading, Piper TTS.
+- Embeddings / semantic memory search, Whisper, Piper TTS, calendar/widget/routines, persistent task engine, data import.
 
 ## Unverified on device
 - On-device LLM (Qwen3 via LiteRT-LM): speed, memory use and whether a given phone can load it. Reply text is read via `Message.toString()`.
