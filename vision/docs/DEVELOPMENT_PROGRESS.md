@@ -45,3 +45,5 @@
 | 5 Memory embeddings | done, CI green (vision-dev-83): optional EmbeddingGemma 270M, cached vectors, fallback to keyword; Offline check row; NOT TESTED on device. Whisper/Piper: not built (documented). |
 | 6 Vision / OCR / PDF | existing ML Kit OCR/labels/PDF kept; replies now state when answered from OCR text rather than by seeing the image; NOT TESTED on device |
 | 7 Coding agent | CodeStudio now asks the router for the code-suited model (CI pending); NOT TESTED on device |
+
+| 8-10 Model screens, security/performance, release | Existing model/settings screens kept; security and performance status in SECURITY_AND_PRIVACY_REVIEW and RELEASE_NOTES.md; benchmarks BLOCKED until device Diagnostics log is supplied |
