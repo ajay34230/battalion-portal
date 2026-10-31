@@ -27,6 +27,27 @@ jobs:
               code = subprocess.run(["curl","-sIL","-o","/dev/null","-w","%{http_code}",f"https://huggingface.co/{repo}/resolve/main/{fn}"],capture_output=True,text=True).stdout
               print(f"::notice title=HASH::{repo} {fn} size={lfs.get('size')} sha256={lfs.get('oid')} anonymous_http={code}")
           PY
+      - name: Check every manifest model against Hugging Face
+        run: |
+          python3 - <<'PY'
+          import re, json, urllib.request, urllib.error
+          src = open("vision/app/src/main/java/com/vision/assistant/core/ResourceManifest.kt").read()
+          for m in re.finditer(r'"\$HF/([^"]+)",\s*"([^"]+)",\s*"([0-9a-f]{64})",\s*([0-9_]+)', src):
+            path, fn, sha, size = m.group(1), m.group(2), m.group(3), int(m.group(4).replace("_",""))
+            repo, _, rest = path.partition("/resolve/main/")
+            url = "https://huggingface.co/" + repo + "/resolve/main/" + rest
+            try:
+              req = urllib.request.Request(url, method="HEAD")
+              class NoRedirect(urllib.request.HTTPRedirectHandler):
+                def redirect_request(self, *a, **k): return None
+              op = urllib.request.build_opener(NoRedirect)
+              try: op.open(req)
+              except urllib.error.HTTPError as e:
+                h = e.headers; live = (h.get("X-Linked-ETag") or h.get("ETag") or "").strip('"'); lsize = h.get("X-Linked-Size") or h.get("Content-Length")
+                print(f"::notice title=MODELCHECK::{fn} http={e.code} manifest_sha={sha[:12]} live_sha={live[:12]} match={live==sha} manifest_size={size} live_size={lsize} size_match={str(size)==str(lsize)}")
+            except Exception as ex:
+              print(f"::notice title=MODELCHECK::{fn} ERROR {ex}")
+          PY
       - name: Maven versions
         run: |
           for u in https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/maven-metadata.xml https://repo1.maven.org/maven2/com/alphacephei/vosk-android/maven-metadata.xml https://repo1.maven.org/maven2/net/java/dev/jna/jna/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/text-recognition/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/text-recognition-devanagari/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/image-labeling/maven-metadata.xml https://repo1.maven.org/maven2/org/apache/pdfbox/pdfbox/maven-metadata.xml https://dl.google.com/android/maven2/androidx/camera/camera-core/maven-metadata.xml; do
