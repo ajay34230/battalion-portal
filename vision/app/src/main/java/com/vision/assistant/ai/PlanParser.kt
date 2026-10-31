@@ -30,6 +30,12 @@ Examples:
 "मम्मी को फोन करो" -> {"intent":"call","contact":"मम्मी"}
 "what is photosynthesis" -> {"intent":"chat","reply":"Photosynthesis is how plants turn sunlight, water and carbon dioxide into sugar and oxygen."}"""
 
+    private val termuxDetail = Regex("""\n\{"intent":"termux"[^\n]*\n""")
+    private val deviceWords = Regex("termux|torch|flash|volume|brightness|location|wifi|wi-fi|camera|photo|clipboard|sms|storage|memory|ram|uptime|python|script|speak|notification|battery|command|shell", RegexOption.IGNORE_CASE)
+    /** The long list of phone-control examples is sent only when the message looks like device control; it makes the prompt a lot shorter for everything else. */
+    val SHORT: String = termuxDetail.replace(SYSTEM, "\n{\"intent\":\"termux\",\"command\":\"<one command line>\"}  (phone control and tools)\n")
+    fun systemFor(userText: String): String = if (deviceWords.containsMatchIn(userText)) SYSTEM else SHORT
+
     fun parse(modelOutput: String): Plan? {
         val start = modelOutput.indexOf('{'); val end = modelOutput.lastIndexOf('}')
         if (start < 0 || end <= start) return null

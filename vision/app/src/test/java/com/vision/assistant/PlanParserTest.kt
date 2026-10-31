@@ -6,6 +6,7 @@ import com.vision.assistant.ai.PlanParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlanParserTest {
@@ -25,5 +26,11 @@ class PlanParserTest {
     @Test fun badHour() = assertNull(PlanParser.parse("""{"intent":"reminder","text":"x","hour":30,"minute":0}"""))
     @Test fun garbage() = assertNull(PlanParser.parse("no json here"))
     @Test fun unknownIntent() = assertNull(PlanParser.parse("""{"intent":"launch_missiles"}"""))
+    @Test fun shortPromptDropsPhoneControlExamplesOnlyWhenNotNeeded() {
+        assertTrue(PlanParser.SHORT.length < PlanParser.SYSTEM.length - 300)
+        assertTrue(PlanParser.SHORT.contains("\"intent\":\"termux\""))
+        assertEquals(PlanParser.SHORT, PlanParser.systemFor("remind me tomorrow at 6"))
+        assertEquals(PlanParser.SYSTEM, PlanParser.systemFor("turn on the torch"))
+    }
     @Test fun thinkingRemoved() { assertEquals("Hi", LlmText.clean("<think>hmm</think>Hi")); assertEquals("Hi", LlmText.clean("Hi<think>unfinished")); assertNotNull(PlanParser.SYSTEM) }
 }

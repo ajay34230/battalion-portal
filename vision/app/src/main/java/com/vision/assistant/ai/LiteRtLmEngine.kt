@@ -63,7 +63,7 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
     override suspend fun complete(system: String, prompt: String): String? = try { generate(system, prompt).takeIf { it.isNotBlank() } } catch (_: Throwable) { null }
 
     override suspend fun plan(userText: String, onPartial: ((String) -> Unit)?): Plan? =
-        PlanParser.parse(generate(PlanParser.SYSTEM, "\"$userText\" ->", "plan", onPartial?.let { cb -> { acc: String -> PlanStream.partialReply(acc)?.let(cb) } }))
+        PlanParser.parse(generate(PlanParser.systemFor(userText), "\"$userText\" ->", "plan", onPartial?.let { cb -> { acc: String -> PlanStream.partialReply(acc)?.let(cb) } }))
 
     override suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String {
         val langName = when (lang) { Lang.HI -> "Hindi (Devanagari)"; Lang.HINGLISH -> "Hinglish (Hindi in Latin letters)"; Lang.EN -> "English" }

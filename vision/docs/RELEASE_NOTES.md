@@ -35,3 +35,5 @@ Balanced now loads the small model first (so the first answer is quick) and neve
 
 ## Update: measured slowness (first Diagnostics log)
 Log from the phone (Qwen3 0.6B, CPU): model load 2.9 s, but the planning call took 16-20 s for answers of only 18-66 characters. The time is therefore spent reading the ~7 KB planner prompt, not generating. (Inference from timings; prompt-read and generation were not timed separately.) The planner also misread "how are you" as a time question. Fix: plain small talk and simple "explain/why" questions skip the planner and use the short chat prompt. Other messages still use the planner and stay slow on this hardware until the prompt is shortened or cached.
+
+Planner prompt shortened: the long list of phone-control (Termux) examples is sent only when the message mentions device control (torch, volume, camera, etc.). Saving is a few hundred characters out of about 7 KB, so a modest gain; real effect NOT MEASURED. Online (ChatGPT-class) mode was offered and declined for now; VISION stays offline-only.
