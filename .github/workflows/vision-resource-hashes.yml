@@ -39,6 +39,12 @@ jobs:
             curl -sSfL -o "$m.zip" "https://alphacephei.com/vosk/models/$m.zip" || { echo "::notice title=VOSK::$m DOWNLOAD FAILED"; continue; }
             echo "::notice title=VOSK::$m size=$(wc -c < $m.zip) sha256=$(sha256sum $m.zip | cut -d' ' -f1)"
           done
+      - name: Vosk Java API (speaker model)
+        run: |
+          curl -sSfL -o v.aar https://repo1.maven.org/maven2/com/alphacephei/vosk-android/0.3.47/vosk-android-0.3.47.aar && unzip -oq v.aar classes.jar
+          for c in org.vosk.Recognizer org.vosk.SpeakerModel org.vosk.SpkModel; do
+            javap -cp classes.jar $c 2>&1 | tr '\n' ' ' | sed 's/^/::notice title=VOSKAPI::/'; echo
+          done
       - name: Gradle plugin versions
         run: |
           for u in \
