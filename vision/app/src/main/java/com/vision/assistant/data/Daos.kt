@@ -60,6 +60,7 @@ interface PaymentDao {
     @Query("SELECT COUNT(*) FROM payment_record WHERE direction=:d AND paise=:p AND party=:who AND at >= :since") suspend fun duplicates(d: String, p: Long, who: String, since: Long): Int
     @Query("UPDATE payment_record SET category=:c, place=:pl, confirmed=1 WHERE id=:id") suspend fun confirm(id: Long, c: String, pl: String)
     @Query("SELECT * FROM payment_record WHERE confirmed=0 AND direction='PAID' ORDER BY at DESC") suspend fun unconfirmed(): List<PaymentRecord>
+    @Query("SELECT COUNT(*) FROM payment_record WHERE source=:s") suspend fun bySource(s: String): Int
     @Query("DELETE FROM payment_record WHERE id=:id") suspend fun delete(id: Long)
     @Query("DELETE FROM payment_record") suspend fun clear()
 }

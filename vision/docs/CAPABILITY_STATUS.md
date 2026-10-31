@@ -47,3 +47,17 @@ Nothing in this project has yet been run on the iQOO 7. CI success is not proof 
 | Persistent multi-step task engine with pause/recovery | **Not built** (only in-turn multi-step) |
 
 See KNOWN_LIMITATIONS.md and TEST_REPORT.md.
+
+## Added in the widget/wake-word/money batch
+| Feature | Status |
+|---|---|
+| Home-screen widget | Code complete, compiles in CI; not seen on a real launcher |
+| Hey Vision wake word | Code + unit tests of phrase logic; microphone spotting NOT verified on a phone; Android 14 requires starting from the app UI |
+| Git buttons / restricted Terminal | Script generation and command policy unit-tested; running needs Termux + not tested on a phone |
+| Visual test (screenshots, layout checks) | Interpretation logic unit-tested; WebView capture not run on a phone |
+| Per-project notes | Works as a file; fed to the model on build |
+| Payment capture from notifications | Parser unit-tested on sample texts; real PhonePe/Paytm/bank wording varies and is NOT verified on your phone |
+| Daily payment confirmation prompt | WorkManager; time-of-day logic unit-tested; delivery not verified on device |
+| Gmail payment sync | Code complete; cannot work until you create the OAuth client (docs/GMAIL_SETUP.md); not tested against real Gmail |
+| Whisper / Piper voices | **Not built** (see KNOWN_LIMITATIONS.md); phone's own voice engines are used |
+| On-phone APK building | Not supported; cloud builds only |

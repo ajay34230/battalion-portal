@@ -72,3 +72,13 @@ class PaymentReviewTest {
         org.junit.Assert.assertEquals(listOf("Unsorted" to 300L, "Food" to 150L), r)
     }
 }
+
+class GmailParseTest {
+    @org.junit.Test fun parsesMetadata() {
+        val m = com.vision.assistant.finance.Gmail.parseMessage("""{"id":"abc","snippet":"Rs.350.00 debited from A/c XX99 to VPA zomato@upi","internalDate":"1760000000000","payload":{"headers":[{"name":"From","value":"x@bank.com"},{"name":"Subject","value":"Transaction alert"}]}}""")!!
+        org.junit.Assert.assertEquals("abc", m.id); org.junit.Assert.assertEquals("Transaction alert", m.subject)
+        val p = com.vision.assistant.finance.PaymentParser.parse(m.subject, m.snippet)!!; org.junit.Assert.assertEquals(35000L, p.amountPaise)
+    }
+    @org.junit.Test fun garbageIsNull() = org.junit.Assert.assertNull(com.vision.assistant.finance.Gmail.parseMessage("nope"))
+    @org.junit.Test fun explainsClientErrors() = org.junit.Assert.assertTrue(com.vision.assistant.finance.Gmail.explain("10: DEVELOPER_ERROR").contains("GMAIL_SETUP"))
+}

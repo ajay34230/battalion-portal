@@ -18,3 +18,10 @@
 - Smart reminders (bills, birthdays, anniversaries); learning from the user; UI v2 with bottom navigation and animated avatar.
 - Coding Studio: project store with snapshots/rollback/ZIP, templates, static checks, safe fix loop, preview, Termux runner, developer research, tool inventory and guarded installer.
 - Setup & health screen, crash log, multi-step commands, deep/academic research, JSON export, phone-voice default.
+
+## Widget, wake word, Coding Studio extras, Money (this batch)
+- Home-screen widget (next reminders). Not verified on a launcher.
+- "Hey Vision" wake word: foreground microphone service with offline Vosk keyword spotting, off by default (Settings). Battery/privacy cost; unverified on device.
+- Coding Studio: Git buttons (Termux), restricted Terminal tab (allow-list, no Advanced mode), Notes tab (NOTES.md), Visual test panel (screenshots at 360/412/768 px + layout checks).
+- Money: payment capture from notifications (PhonePe, Paytm, GPay, bank alerts), category + place confirmation, daily review prompt at a time you choose, spend summaries by voice/chat, Gmail read-only sync (needs your OAuth client, docs/GMAIL_SETUP.md).
+- Fixed: calendar phrases no longer swallow "remind me ... my schedule".

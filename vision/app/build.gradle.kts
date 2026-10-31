@@ -67,6 +67,7 @@ dependencies {
     kapt("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.21") // Room bundles an older reader that rejects Kotlin 2.4 metadata
 
     implementation("org.jsoup:jsoup:1.18.1")
+    implementation("com.google.android.gms:play-services-auth:21.2.0") // Gmail sign-in (Authorization API)
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
     implementation("com.google.mlkit:image-labeling:17.0.9")

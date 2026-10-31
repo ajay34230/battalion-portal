@@ -8,3 +8,6 @@ Covered by JVM unit tests: tier policy, intent parsing (English/Hindi/Hinglish),
 Not covered: any on-device behaviour (UI, audio, models, lock screen, Termux) — requires manual testing on a phone.
 
 Added since: reminders/event planner, event and learning parsers, coding module (store, ZIP, snapshots, static checks, fix loop with fake model, Termux script builder), developer research parsers, multi-step splitting, backup round-trip, research modes. Check the latest workflow run for the current pass/fail state — this file does not claim a result.
+
+## Batch: widget / wake word / Coding extras / Money
+CI run 41176404049 (commit fe1d319): everything compiled; 130 of 131 unit tests passed; 1 failed (`reminderWeeklySunday`) because the calendar phrase matcher caught "my schedule" inside a reminder. Fixed in the next commit (see CI result below once recorded). New tests: PaymentParserTest, PaymentReviewTest, GmailParseTest, VisualAndGitTest, WakeWordTest. Nothing here has been run on a phone.

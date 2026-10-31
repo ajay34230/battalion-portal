@@ -35,7 +35,22 @@ fun MoneyScreen(app: VisionApp) {
     LaunchedEffect(Unit) { load() }
     val monthStart = java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_MONTH, 1); set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0) }.timeInMillis
     val t = SpendSummary.totals(rows.filter { it.at >= monthStart }.map { SpendSummary.Row(Direction.valueOf(it.direction), it.paise, it.party, it.bill, it.category) })
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var gmailNote by remember { mutableStateOf("") }
+    fun syncWith(t: com.vision.assistant.finance.Gmail.Auth) { when (t) {
+        is com.vision.assistant.finance.Gmail.Auth.Token -> scope.launch { gmailNote = "Reading payment mails…"; com.vision.assistant.finance.Gmail.sync(app, t.value).fold({ gmailNote = "Checked ${it.second} mails, added ${it.first} new payment(s)."; load() }, { gmailNote = "Gmail sync failed: ${it.message}" }) }
+        is com.vision.assistant.finance.Gmail.Auth.Failed -> gmailNote = t.why
+        else -> {} } }
+    val consent = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult()) { r -> if (r.resultCode == android.app.Activity.RESULT_OK) syncWith(com.vision.assistant.finance.Gmail.tokenFrom(ctx, r.data)) else gmailNote = "Gmail access was not granted." }
     LazyColumn(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            InfoCard {
+                Text("Gmail payment mails (read-only)", fontSize = 14.sp)
+                Text("Finds bank/UPI/bill mails from the last 35 days. Needs your own Google OAuth client — see docs/GMAIL_SETUP.md. VISION only reads; it never sends or deletes mail.", fontSize = 11.sp, color = VisionColors.Muted)
+                OutlinedButton(onClick = { scope.launch { when (val a = com.vision.assistant.finance.Gmail.authorize(ctx)) { is com.vision.assistant.finance.Gmail.Auth.NeedsConsent -> consent.launch(androidx.activity.result.IntentSenderRequest.Builder(a.sender).build()); else -> syncWith(a) } } }) { Text("Sign in & sync Gmail") }
+                if (gmailNote.isNotBlank()) Text(gmailNote, fontSize = 12.sp)
+            }
+        }
         item {
             InfoCard {
                 Text("This month", fontSize = 13.sp, color = VisionColors.Muted)
