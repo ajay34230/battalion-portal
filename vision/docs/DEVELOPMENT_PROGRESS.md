@@ -32,3 +32,9 @@
 - ZIP: `SafeZip` (path escape, symlink, entry count, per-entry, total, ratio) used by model unpack and project import.
 - Keystore AES-256-GCM (`SecureStore`) now seals voiceprint samples; old plain copy is migrated on first read. Gmail access tokens are only held in memory, so there is nothing to encrypt.
 - BLOCKED: real-device Keystore behaviour, upgrade from the installed v4 database, Termux run on the phone.
+
+## Mission 2 (engine platform)
+| Phase | Status |
+|---|---|
+| 0 Audit docs | done (VISION_ARCHITECTURE_AUDIT, ANDROID_AI_ENGINE_COMPATIBILITY, MODEL_SUPPORT_MATRIX, OFFLINE_CAPABILITY_MATRIX, SECURITY_AND_PRIVACY_REVIEW, TESTING_AND_BENCHMARK_REPORT, roadmap section) |
+| 1 Engine interface + llama.cpp | in progress |
