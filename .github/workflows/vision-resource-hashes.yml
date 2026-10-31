@@ -35,7 +35,7 @@ jobs:
           done
       - name: Vosk model hashes (official host, downloaded over HTTPS)
         run: |
-          for m in vosk-model-small-en-us-0.15 vosk-model-small-hi-0.22; do
+          for m in vosk-model-small-en-us-0.15 vosk-model-small-hi-0.22 vosk-model-spk-0.4; do
             curl -sSfL -o "$m.zip" "https://alphacephei.com/vosk/models/$m.zip" || { echo "::notice title=VOSK::$m DOWNLOAD FAILED"; continue; }
             echo "::notice title=VOSK::$m size=$(wc -c < $m.zip) sha256=$(sha256sum $m.zip | cut -d' ' -f1)"
           done
