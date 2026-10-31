@@ -29,7 +29,7 @@ jobs:
           PY
       - name: Maven versions
         run: |
-          for u in https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/maven-metadata.xml https://repo1.maven.org/maven2/com/alphacephei/vosk-android/maven-metadata.xml https://repo1.maven.org/maven2/net/java/dev/jna/jna/maven-metadata.xml; do
+          for u in https://dl.google.com/android/maven2/com/google/ai/edge/litertlm/litertlm-android/maven-metadata.xml https://repo1.maven.org/maven2/com/alphacephei/vosk-android/maven-metadata.xml https://repo1.maven.org/maven2/net/java/dev/jna/jna/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/text-recognition/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/text-recognition-devanagari/maven-metadata.xml https://dl.google.com/android/maven2/com/google/mlkit/image-labeling/maven-metadata.xml https://repo1.maven.org/maven2/org/apache/pdfbox/pdfbox/maven-metadata.xml https://dl.google.com/android/maven2/androidx/camera/camera-core/maven-metadata.xml; do
             v=$(curl -sSf "$u" | tr -d '\n ' | grep -o '<release>[^<]*\|<latest>[^<]*\|<version>[^<]*' | tail -6 | tr '\n' ' ')
             echo "::notice title=MAVEN::$u $v"
           done
