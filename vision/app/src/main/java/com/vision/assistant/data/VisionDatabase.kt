@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [ChatMessage::class, MemoryItem::class, TaskItem::class, AuditEntry::class, NotificationLog::class, PaymentRecord::class],
     version = 4,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class VisionDatabase : RoomDatabase() {
     abstract fun chat(): ChatDao
@@ -19,9 +19,23 @@ abstract class VisionDatabase : RoomDatabase() {
     abstract fun payments(): PaymentDao
 
     companion object {
-        fun build(context: Context): VisionDatabase =
-            Room.databaseBuilder(context.applicationContext, VisionDatabase::class.java, "vision.db")
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4).fallbackToDestructiveMigration().build()
+        const val VERSION = 4
+
+        /**
+         * Opens the database with explicit migrations only. There is no destructive fallback: a database that cannot be migrated or fails its
+         * integrity check is moved to the backup folder (see [DbSafety]) and the app starts fresh with a notice, instead of silently wiping data.
+         */
+        fun build(context: Context): VisionDatabase {
+            val app = context.applicationContext
+            DbSafety.beforeOpen(app, VERSION)
+            fun make() = Room.databaseBuilder(app, VisionDatabase::class.java, "vision.db").addMigrations(MIGRATION_2_3, MIGRATION_3_4).build()
+            val db = make()
+            val problem = try { DbSafety.check(db.openHelper.writableDatabase) } catch (e: Exception) { e.message ?: e.javaClass.simpleName }
+            if (problem == null) return db
+            try { db.close() } catch (_: Exception) { }
+            DbSafety.quarantine(app, problem)
+            return make()
+        }
 
         val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {

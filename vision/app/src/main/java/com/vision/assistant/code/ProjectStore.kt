@@ -86,19 +86,27 @@ class ProjectStore(val root: File) {
         return n
     }
 
-    /** Imports a ZIP into a new project. Entries with unsafe paths are skipped. Returns the created project's file count. */
+    /** Imports a ZIP into a new project. Unsafe paths are skipped; an archive that is too big or expands suspiciously is refused and the half-created project removed. Returns the created project's file count. */
     fun importZip(name: String, input: java.io.InputStream): Result<Int> {
         val created = create(name); if (created.isFailure) return Result.failure(created.exceptionOrNull()!!)
         var n = 0
-        ZipInputStream(input).use { z ->
-            var e = z.nextEntry
-            while (e != null) {
-                if (!e.isDirectory && n < MAX_FILES) {
-                    val rel = safeRelative(e.name.substringAfter('/', e.name))
-                    if (rel != null) { val bytes = readLimited(z, MAX_FILE_BYTES + 1); if (bytes.size <= MAX_FILE_BYTES) { File(dir(name), rel).apply { parentFile?.mkdirs(); writeBytes(bytes) }; n++ } }
+        val budget = com.vision.assistant.core.SafeZip.Budget(com.vision.assistant.core.SafeZip.Limits(maxEntries = 2_000, maxEntryBytes = 20L * 1024 * 1024, maxTotalBytes = 20L * 1024 * 1024, maxRatio = 200))
+        try {
+            ZipInputStream(input).use { z ->
+                var e = z.nextEntry
+                while (e != null) {
+                    budget.entry()
+                    if (!e.isDirectory && n < MAX_FILES) {
+                        val rel = safeRelative(e.name.substringAfter('/', e.name))
+                        // Bytes are counted even for skipped entries so a hostile archive cannot hide bulk in them.
+                        val bytes = java.io.ByteArrayOutputStream().also { com.vision.assistant.core.SafeZip.copyEntry(z, it, budget) }.toByteArray()
+                        if (rel != null && bytes.size <= MAX_FILE_BYTES) { File(dir(name), rel).apply { parentFile?.mkdirs(); writeBytes(bytes) }; n++ }
+                    }
+                    e = z.nextEntry
                 }
-                e = z.nextEntry
             }
+        } catch (ex: com.vision.assistant.core.SafeZip.ZipRejected) {
+            dir(name).deleteRecursively(); return Result.failure(ex)
         }
         return Result.success(n)
     }

@@ -9,6 +9,10 @@ kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
+kapt {
+    arguments { arg("room.schemaLocation", "$projectDir/schemas") }
+}
+
 android {
     namespace = "com.vision.assistant"
     compileSdk = 35

@@ -106,7 +106,7 @@ class TermuxRunnerTest {
     }
     @Test fun scriptCarriesFilesAsBase64AndStaysInProjectsFolder() {
         val s = TermuxRunner.script("demo", mapOf("a.py" to "print('hi')\n", "src/b.txt" to "x"), "python3 'a.py'")!!
-        assertTrue(s.contains("\$HOME/projects/demo")); assertTrue(s.contains("mkdir -p 'src'")); assertFalse(s.contains("print('hi')"))
+        assertTrue(s.contains("\$HOME/projects") && s.contains("/demo")); assertTrue(s.contains("mkdir -p 'src'")); assertFalse(s.contains("print('hi')"))
         assertTrue(s.endsWith("python3 'a.py'"))
     }
     @Test fun tooLargeProjectIsRefused() = assertNull(TermuxRunner.script("big", mapOf("x.txt" to "a".repeat(200_000)), "true"))

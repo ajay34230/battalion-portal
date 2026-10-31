@@ -45,11 +45,24 @@ object Voiceprint {
     val PROMPTS = listOf("Hey Vision", "Hey Vision", "Hey Vision", "Vision", "Vision", "Hi Vision", "Hi Vision", "Hi Vision")
 
     private fun sp(c: Context) = c.getSharedPreferences("vision_voiceprint", Context.MODE_PRIVATE)
+    /** Voice samples are stored sealed with a Keystore key. An older plain copy is read once and replaced by a sealed one. If the sealed copy cannot be read (key lost), the user simply re-enrols. */
     fun load(c: Context): List<DoubleArray> = try {
-        val arr = JSONArray(sp(c).getString("samples", "[]"))
+        val sealed = sp(c).getString("samples_enc", null)
+        val json = if (sealed != null) com.vision.assistant.core.SecureStore.open(sealed) ?: "[]" else {
+            val plain = sp(c).getString("samples", null)
+            if (plain != null) { writeSamples(c, plain) }
+            plain ?: "[]"
+        }
+        val arr = JSONArray(json)
         (0 until arr.length()).map { i -> val v = arr.getJSONArray(i); DoubleArray(v.length()) { v.getDouble(it) } }
     } catch (_: Exception) { emptyList() }
-    fun save(c: Context, samples: List<DoubleArray>) { sp(c).edit().putString("samples", JSONArray(samples.map { s -> JSONArray(s.toList()) }).toString()).apply() }
+    private fun writeSamples(c: Context, json: String) {
+        val sealed = com.vision.assistant.core.SecureStore.seal(json)
+        // Plain storage only if this phone's Keystore is unusable; the privacy screen must not claim encryption then.
+        if (sealed != null) sp(c).edit().putString("samples_enc", sealed).remove("samples").apply() else sp(c).edit().putString("samples", json).apply()
+    }
+    fun isEncrypted(c: Context) = sp(c).contains("samples_enc")
+    fun save(c: Context, samples: List<DoubleArray>) { writeSamples(c, JSONArray(samples.map { s -> JSONArray(s.toList()) }).toString()) }
     fun clear(c: Context) { sp(c).edit().clear().apply() }
     fun enrolled(c: Context) = load(c).size >= 4
     fun dismissed(c: Context) = sp(c).getBoolean("dismissed", false)

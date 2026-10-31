@@ -130,14 +130,16 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
 
     private fun unzip(e: ResourceEntry, zip: File) {
         val out = File(dir, "unzipped/${e.id}").apply { deleteRecursively(); mkdirs() }
-        val root = out.canonicalPath + File.separator
-        ZipInputStream(zip.inputStream().buffered()).use { zin ->
-            while (true) {
-                val entry = zin.nextEntry ?: break
-                val target = File(out, entry.name)
-                if (!target.canonicalPath.startsWith(root)) continue // zip-slip guard
-                if (entry.isDirectory) target.mkdirs() else { target.parentFile?.mkdirs(); target.outputStream().use { zin.copyTo(it) } }
+        val budget = SafeZip.Budget(SafeZip.Limits(maxEntries = 5_000, maxEntryBytes = 1_500_000_000L, maxTotalBytes = 2_000_000_000L, maxRatio = 100), zip.length())
+        try {
+            ZipInputStream(zip.inputStream().buffered()).use { zin ->
+                while (true) {
+                    val entry = zin.nextEntry ?: break
+                    budget.entry()
+                    val target = SafeZip.resolve(out, entry.name) ?: throw SafeZip.ZipRejected("Unsafe path in archive: ${entry.name.take(60)}")
+                    if (entry.isDirectory) target.mkdirs() else { target.parentFile?.mkdirs(); target.outputStream().use { SafeZip.copyEntry(zin, it, budget) } }
+                }
             }
-        }
+        } catch (ex: Exception) { out.deleteRecursively(); throw ex }
     }
 }

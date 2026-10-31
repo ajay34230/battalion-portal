@@ -19,5 +19,12 @@
 | Mission phase | Status |
 |---|---|
 | 0 Audit docs | done (ARCHITECTURE_AUDIT, BUGS_AND_RISKS, FEATURE_IMPLEMENTATION_MAP, UPGRADE_ROADMAP, REGRESSION_TEST_PLAN) |
-| 1 Data/file/ZIP safety + encryption | in progress |
+| 1 Data/file/ZIP safety + encryption | code pushed; CI result below. Device checks BLOCKED (see REGRESSION_TEST_PLAN) |
 | 2-12 | not started |
+
+### Phase 1 changes
+- Room: destructive fallback removed; explicit migrations only; schema export on; backup before upgrade; `quick_check` after open; unusable DB moved to `files/db_backups` (never deleted) with a notice. API for manual backup / restore-on-next-start exists (`DbSafety`); Settings UI for it is not built yet.
+- Termux: slug validated; project written to a staging folder, old project moved (not deleted) to `~/projects/.vision-backups`, newest 5 kept; git runs take a tar backup first. No `rm -rf`.
+- ZIP: `SafeZip` (path escape, symlink, entry count, per-entry, total, ratio) used by model unpack and project import.
+- Keystore AES-256-GCM (`SecureStore`) now seals voiceprint samples; old plain copy is migrated on first read. Gmail access tokens are only held in memory, so there is nothing to encrypt.
+- BLOCKED: real-device Keystore behaviour, upgrade from the installed v4 database, Termux run on the phone.

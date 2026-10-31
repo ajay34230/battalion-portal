@@ -16,16 +16,36 @@ object TermuxRunner {
         }
     }
 
-    /** Null when the project is too large to send in one command. */
-    fun script(projectSlug: String, files: Map<String, String>, command: String): String? {
-        val b64 = java.util.Base64.getEncoder()
-        val sb = StringBuilder("set -e; d=\"${'$'}HOME/projects/$projectSlug\"; rm -rf \"${'$'}d\"; mkdir -p \"${'$'}d\"; cd \"${'$'}d\"\n")
+    private val SLUG = Regex("[A-Za-z0-9][A-Za-z0-9_-]{0,39}")
+    fun validSlug(s: String) = SLUG.matches(s)
+
+    private fun fileLines(files: Map<String, String>): String {
+        val b64 = java.util.Base64.getEncoder(); val sb = StringBuilder()
         for ((p, c) in files) {
-            val q = "'" + p + "'"
             val dir = p.substringBeforeLast('/', "")
             if (dir.isNotEmpty()) sb.append("mkdir -p '").append(dir).append("'\n")
-            sb.append("printf %s '").append(b64.encodeToString(c.toByteArray())).append("' | base64 -d > ").append(q).append('\n')
+            sb.append("printf %s '").append(b64.encodeToString(c.toByteArray())).append("' | base64 -d > '").append(p).append("'\n")
         }
+        return sb.toString()
+    }
+
+    private fun prune(slug: String) = "ls -1dt \"\$b\"/$slug-* 2>/dev/null | tail -n +6 | while read -r x; do rm -r -- \"\$x\"; done || true\n"
+
+    /**
+     * Null when the slug is unsafe or the project is too large to send in one command.
+     * The new files are written to a staging folder first; only when that fully succeeds is the old project moved
+     * (never deleted) to ~/projects/.vision-backups and the staging folder put in its place. A failure while writing leaves the old project untouched.
+     * Backups beyond the newest five for this project are pruned, and only inside the backups folder.
+     */
+    fun script(projectSlug: String, files: Map<String, String>, command: String): String? {
+        if (!validSlug(projectSlug)) return null
+        val sb = StringBuilder()
+        sb.append("set -e; s=\"\$HOME/projects\"; d=\"\$s/$projectSlug\"; n=\"\$d.vision-new\"; b=\"\$s/.vision-backups\"\n")
+        sb.append("mkdir -p \"\$s\" \"\$b\"\n")
+        sb.append("if [ -e \"\$n\" ]; then mv \"\$n\" \"\$b/stale-$projectSlug-\$(date +%s)\"; fi\n")
+        sb.append("mkdir \"\$n\"; cd \"\$n\"\n").append(fileLines(files))
+        sb.append("cd \"\$s\"\nif [ -e \"\$d\" ]; then mv \"\$d\" \"\$b/$projectSlug-\$(date +%s)\"; fi\n")
+        sb.append("mv \"\$n\" \"\$d\"; cd \"\$d\"\n").append(prune(projectSlug))
         sb.append(command)
         val s = sb.toString()
         return if (s.toByteArray().size > MAX_SCRIPT_BYTES) null else s
@@ -44,20 +64,14 @@ object TermuxRunner {
         fun branch(name: String) = "git checkout -q -b '${name.replace(Regex("[^A-Za-z0-9._/-]"), "").take(40).ifBlank { "work" }}' && git branch --show-current"
     }
 
-    /** Like [script] but keeps the repository (.git) in ~/projects/<name>: only working files are replaced, so history survives between runs. */
+    /** Like [script] but keeps the repository (.git) in ~/projects/<name>. A tar backup of the working files (without .git) is taken before they are replaced, so a bad run can be undone. */
     fun gitScript(projectSlug: String, files: Map<String, String>, command: String): String? {
-        val b64 = java.util.Base64.getEncoder()
-        val sb = StringBuilder("set -e; d=\"${'$'}HOME/projects/$projectSlug\"; mkdir -p \"${'$'}d\"; cd \"${'$'}d\"\nfind . -path ./.git -prune -o -type f -exec rm -f {} +\n")
-        for ((p, c) in files) {
-            val dir = p.substringBeforeLast('/', "")
-            if (dir.isNotEmpty()) sb.append("mkdir -p '").append(dir).append("'\n")
-            sb.append("printf %s '").append(b64.encodeToString(c.toByteArray())).append("' | base64 -d > '").append(p).append("'\n")
-        }
-        sb.append(command)
+        if (!validSlug(projectSlug)) return null
+        val sb = StringBuilder("set -e; s=\"\$HOME/projects\"; d=\"\$s/$projectSlug\"; b=\"\$s/.vision-backups\"; mkdir -p \"\$d\" \"\$b\"; cd \"\$d\"\n")
+        sb.append("tar -cf \"\$b/$projectSlug-\$(date +%s).tar\" --exclude=./.git . 2>/dev/null || true\n")
+        sb.append("find . -path ./.git -prune -o -type f -exec rm -f {} +\n").append(fileLines(files))
+        sb.append(prune(projectSlug)).append(command)
         val s = sb.toString()
         return if (s.toByteArray().size > MAX_SCRIPT_BYTES) null else s
     }
-
-    fun requestFor(script: String) = com.vision.assistant.termux.Validation.Ok("bash", listOf("-c", script), sensitive = true, high = true)
-    val homeProjects get() = CommandPolicy.HOME + "/projects"
 }
