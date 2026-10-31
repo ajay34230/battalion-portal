@@ -53,65 +53,16 @@ import androidx.compose.ui.unit.sp
 import com.vision.assistant.ai.OrbState
 import com.vision.assistant.VisionApp
 
-private data class Tile(val icon: String, val title: String, val sub: String, val route: String)
-
-@Composable
-fun HomeScreen(app: VisionApp, go: (String) -> Unit) {
-    val profile = app.deviceProfile
-    val engineLabel by app.engines.label.collectAsState()
-    androidx.compose.runtime.LaunchedEffect(Unit) { app.engines.current() }
-    val tiles = listOf(
-        Tile("💬", "Talk", "Voice & chat", Routes.CHAT), Tile("⏰", "Tasks", "Reminders", Routes.TASKS),
-        Tile("🧠", "Memory", "What I remember", Routes.MEMORY), Tile("⬇", "Models", "AI & voice downloads", Routes.MODELS),
-        Tile("⌨", "Termux", "Safe commands", Routes.TERMUX), Tile("🛡", "Privacy", "Data & action log", Routes.PRIVACY),
-        Tile("⚙", "Settings", "Lock screen & more", Routes.SETTINGS), Tile("📱", "This phone", "Tier ${profile.tier}", Routes.DEVICE),
-        Tile("🔑", "Permissions", "Control access", Routes.PERMISSIONS),
-    )
-    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.height(8.dp))
-                VisionLogo(72.dp)
-                Text("V I S I O N", fontSize = 30.sp, fontWeight = FontWeight.Light, color = VisionColors.Cyan,
-                    style = MaterialTheme.typography.headlineLarge.copy(shadow = Shadow(VisionColors.Cyan, blurRadius = 28f)))
-                Text(engineLabel, color = VisionColors.Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(10.dp))
-                JarvisOrb(OrbState.IDLE, 0f, Modifier.size(270.dp).clip(CircleShape).clickable { go(Routes.CHAT) })
-                Text("Tap the orb to talk", color = VisionColors.Muted, fontSize = 12.sp, letterSpacing = 3.sp)
-                Text("Built with gratitude by ${com.vision.assistant.ai.Identity.CREATOR}", color = VisionColors.Cyan.copy(alpha = 0.8f), fontSize = 11.sp, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(8.dp))
-            }
-        }
-        itemsIndexed(tiles) { index, t ->
-            var shown by remember { mutableStateOf(false) }
-            androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(150L + index * 110L); shown = true }
-            AnimatedVisibility(shown, enter = fadeIn(tween(900)) + slideInVertically(tween(900)) { it / 4 }) {
-                Column(Modifier.fillMaxWidth().glass(22).clickable { go(t.route) }.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(t.icon, fontSize = 26.sp)
-                    Text(t.title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                    Text(t.sub, fontSize = 12.sp, color = VisionColors.Muted)
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun DeviceScreen(p: DeviceProfile, back: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("This device", style = MaterialTheme.typography.headlineSmall)
+        ScreenTitle("This device")
         Text("Tier: ${p.tier}")
         Text("RAM: ${p.totalRamMb} MB")
         Text("Free storage: ${p.freeStorageMb} MB")
         Text("CPU ABIs: ${p.abis.joinToString()}")
         Text("64-bit: ${p.is64Bit}  Cores: ${p.cores}")
         Text("Android SDK: ${p.sdk}")
-        OutlinedButton(onClick = back) { Text("Back") }
     }
 }
 
@@ -128,7 +79,7 @@ fun PermissionsScreen(back: () -> Unit) {
         if (Build.VERSION.SDK_INT >= 33) add("Notifications" to Manifest.permission.POST_NOTIFICATIONS)
     }
     Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Permissions", style = MaterialTheme.typography.headlineSmall)
+        ScreenTitle("Permissions")
         key(refresh) {
             items.forEach { (label, perm) ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -143,6 +94,5 @@ fun PermissionsScreen(back: () -> Unit) {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }) { Text("Open app settings (revoke permissions)") }
-        OutlinedButton(onClick = back) { Text("Back") }
     }
 }

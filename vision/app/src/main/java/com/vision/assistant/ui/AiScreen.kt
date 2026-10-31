@@ -126,7 +126,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
                 Modifier.fillMaxWidth().padding(20.dp).statusBarsPadding().navigationBarsPadding().glass(28).clickable(enabled = false) {}.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                JarvisOrb(orb, level, Modifier.size(240.dp).clip(CircleShape).clickable { orbTap() })
+                VisionAvatar(orb, level, Modifier.size(240.dp).clip(CircleShape).clickable { orbTap() })
                 Text(orbCaption(orb), color = VisionColors.Muted, fontSize = 13.sp, letterSpacing = 2.sp)
                 if (heard.isNotBlank()) Text("“$heard”", color = VisionColors.Cyan, textAlign = TextAlign.Center, fontSize = 18.sp)
                 AnimatedVisibility(reply.isNotBlank(), enter = fadeIn(tween(700)) + slideInVertically(tween(700)) { it / 4 }, exit = fadeOut(tween(400))) {
@@ -152,7 +152,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
             Text(engineLabel, color = VisionColors.Muted, fontSize = 11.sp, modifier = Modifier.weight(1f).padding(start = 10.dp), maxLines = 2)
         }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            JarvisOrb(orb, level, Modifier.size(210.dp).clip(CircleShape).clickable { orbTap() })
+            VisionAvatar(orb, level, Modifier.size(210.dp).clip(CircleShape).clickable { orbTap() })
         }
         Text(orbCaption(orb), color = VisionColors.Muted, fontSize = 12.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(8.dp)) {

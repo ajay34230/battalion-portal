@@ -66,7 +66,7 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
     var lock by remember { mutableStateOf(LockPrefs.load(ctx)) }
     fun upd(n: LockSettings) { lock = n; LockPrefs.save(ctx, n) }
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineSmall)
+        ScreenTitle("Settings")
 
         Text("Calling VISION", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
         Text("VISION opens as a glowing sheet over any screen. Ways to call it: the Quick Settings tile “Ask VISION”, the Speak button in the voice-session notification, or set VISION as your Digital assistant app (Android Settings → Apps → Default apps) so a power-button or home-gesture long press opens it. A hands-free “Hey Vision” wake word is not built yet.", style = MaterialTheme.typography.bodySmall)
@@ -104,7 +104,6 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         OutlinedTextField(brave, { brave = it }, Modifier.fillMaxWidth(), label = { Text("Brave API key") }, singleLine = true)
         Button(onClick = { Prefs.setSearxngUrl(ctx, searx); Prefs.setBraveKey(ctx, brave); msg = "Saved." }) { Text("Save") }
         if (msg.isNotBlank()) Text(msg)
-        OutlinedButton(onClick = back) { Text("Back") }
     }
 }
 
@@ -115,7 +114,7 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
     val audit by app.database.audit().recent().collectAsState(initial = emptyList())
     var msg by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Privacy centre", style = MaterialTheme.typography.headlineSmall)
+        ScreenTitle("Privacy centre")
         Text("Everything is stored only on this phone. Nothing is uploaded except the searches and downloads you ask for.", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { scope.launch { app.database.chat().clear(); msg = "Chat erased." } }) { Text("Erase chat") }
@@ -127,7 +126,6 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
         LazyColumn(Modifier.weight(1f)) {
             items(audit) { a -> Text("${DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(a.createdAt))} · ${a.tool} · ${a.outcome} · ${a.summary}", style = MaterialTheme.typography.bodySmall) }
         }
-        OutlinedButton(onClick = back) { Text("Back") }
     }
 }
 
@@ -159,7 +157,7 @@ fun TermuxScreen(app: VisionApp, back: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Termux", style = MaterialTheme.typography.headlineSmall)
+        ScreenTitle("Termux")
         Text(
             (if (gateway.isInstalled()) "Termux: installed. " else "Termux: NOT installed (get it from F-Droid or github.com/termux/termux-app, not Google Play). ") +
                 (if (gateway.apiInstalled()) "Termux:API: installed." else "Termux:API app: not installed (needed for torch, camera, location, SMS, volume…; install it from the same source as Termux)."),
@@ -198,7 +196,6 @@ fun TermuxScreen(app: VisionApp, back: () -> Unit) {
         if (msg.isNotBlank()) Text(msg)
         Text("Last result:", style = MaterialTheme.typography.titleMedium)
         androidx.compose.foundation.text.selection.SelectionContainer { Text(out.ifBlank { "(none yet)" }, style = MaterialTheme.typography.bodySmall) }
-        OutlinedButton(onClick = back) { Text("Back") }
     }
     pending?.let { v ->
         AlertDialog(
