@@ -20,6 +20,8 @@ data class ResourceEntry(
     val languages: String,
     val note: String = "",
     val multimodal: Boolean = false,
+    /** Bigger than the safe RAM rule allows. Offered only on explicit user request, with a warning; may be very slow or crash on small-RAM phones. */
+    val experimental: Boolean = false,
 ) {
     val sizeMb: Long get() = sizeBytes / 1_048_576
 }
@@ -59,6 +61,12 @@ object ResourceManifest {
             "$HF/Qwen3.5-4B/resolve/main/Qwen3.5-4B_mixed_int4.litertlm", "Qwen3.5-4B_mixed_int4.litertlm",
             "7243c33c9c6192150ab6da7ac13a9efdc24ff1a653eabc93b2757de4b44b012a", 2_754_070_624, 6_500,
             "Apache-2.0", "multilingual (incl. Hindi)", "For 8 GB+ phones such as iQOO 7. Published benchmark: about 6 tokens/s on an 8 GB Pixel 8a CPU, ~4.4 GB peak memory. Text only.",
+        ),
+        ResourceEntry(
+            "qwen3.5-9b-int4", ResourceKind.LLM, "Qwen3.5 9B (mixed int4) — experimental, strongest",
+            "$HF/Qwen3.5-9B/resolve/main/Qwen3.5-9B_mixed_int4.litertlm", "Qwen3.5-9B_mixed_int4.litertlm",
+            "61042ebd3c473763972d22310c055f63fab5a29bc2976ab533d6a59c262cac65", 6_060_357_536, 8_000,
+            "Apache-2.0", "multilingual (incl. Hindi)", "EXPERIMENTAL: 6 GB file, expected 9–10 GB of memory while running. Only real RAM counts — extended/virtual RAM is slow flash storage and does not make this fast. Likely slow (under ~2 tokens/s) or may close the app on an 8 GB phone; fine to try on a 12 GB+ phone. Text only.", experimental = true,
         ),
         ResourceEntry(
             "gemma4-e2b", ResourceKind.LLM, "Gemma 4 E2B — language + image understanding",

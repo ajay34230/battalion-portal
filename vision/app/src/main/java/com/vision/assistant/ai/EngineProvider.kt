@@ -27,36 +27,53 @@ class EngineProvider(private val app: VisionApp) {
     /** An engine that can see images, or null if no multimodal model is installed. */
     suspend fun vision(): LlmEngine? = select(needImage = true)
 
+    private val prefs get() = app.getSharedPreferences("vision_models", android.content.Context.MODE_PRIVATE)
+    /** Models that crashed or failed to load on this phone; skipped automatically so a too-big model can never lock the app in a crash loop. */
+    fun badModels(): Set<String> = prefs.getStringSet("bad", emptySet()) ?: emptySet()
+    private fun markBad(id: String) { prefs.edit().putStringSet("bad", badModels() + id).apply() }
+    fun clearBad(id: String) { prefs.edit().putStringSet("bad", badModels() - id).apply() }
+
     private fun installed(needImage: Boolean): ResourceEntry? {
         val mgr = Downloads.manager(app)
-        val ok = ResourceManifest.entries.filter { it.kind == ResourceKind.LLM && mgr.compatible(it) && mgr.state(it) == InstallState.INSTALLED }
+        val bad = badModels()
+        val ok = ResourceManifest.entries.filter { it.kind == ResourceKind.LLM && it.id !in bad && mgr.compatible(it) && mgr.state(it) == InstallState.INSTALLED }
+        // Experimental (oversized) models are used only when nothing safe is installed or when the user installed them on purpose and they loaded before.
         return if (needImage) ok.filter { it.multimodal }.maxByOrNull { it.sizeBytes }
         else (ok.filter { !it.multimodal }.maxByOrNull { it.sizeBytes } ?: ok.maxByOrNull { it.sizeBytes })
     }
 
     private suspend fun select(needImage: Boolean): LlmEngine? = mutex.withLock {
-        val entry = installed(needImage)
-        if (entry == null) {
-            if (needImage) return null
-            if (current !is RuleBasedEngine) { (current as? LiteRtLmEngine)?.close(); current = RuleBasedEngine(); currentId = null }
-            label.value = current!!.name
-            return current!!
+        // If the process died while a model was loading (out of memory), blame that model and skip it from now on.
+        prefs.getString("loading", null)?.let { markBad(it); prefs.edit().remove("loading").apply() }
+        while (true) {
+            val entry = installed(needImage)
+            if (entry == null) {
+                if (needImage) return null
+                if (current !is RuleBasedEngine) { (current as? LiteRtLmEngine)?.close(); current = RuleBasedEngine(); currentId = null }
+                label.value = current!!.name + if (badModels().isNotEmpty()) " — a model was skipped because it failed to load on this phone" else ""
+                return current!!
+            }
+            if (currentId == entry.id && current != null) return current!!
+            (current as? LiteRtLmEngine)?.close()
+            label.value = "Loading ${entry.title}…"
+            prefs.edit().putString("loading", entry.id).commit()
+            try {
+                val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
+                e.load()
+                prefs.edit().remove("loading").apply()
+                current = e; currentId = entry.id; lastError = null
+                label.value = entry.title
+                return e
+            } catch (t: Throwable) {
+                prefs.edit().remove("loading").apply()
+                lastError = t.message ?: t.javaClass.simpleName
+                markBad(entry.id)
+                current = RuleBasedEngine(); currentId = null
+                label.value = "${entry.title} failed to load ($lastError); trying a smaller model"
+                if (needImage) return null
+            }
         }
-        if (currentId == entry.id && current != null) return current!!
-        (current as? LiteRtLmEngine)?.close()
-        label.value = "Loading ${entry.title}…"
-        return try {
-            val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
-            e.load()
-            current = e; currentId = entry.id; lastError = null
-            label.value = entry.title
-            e
-        } catch (t: Throwable) {
-            lastError = t.message ?: t.javaClass.simpleName
-            current = RuleBasedEngine(); currentId = null
-            label.value = "Model failed to load ($lastError); basic commands only"
-            if (needImage) null else current!!
-        }
+        @Suppress("UNREACHABLE_CODE") null
     }
 
     /** Called after a model download finishes or a model is deleted. */

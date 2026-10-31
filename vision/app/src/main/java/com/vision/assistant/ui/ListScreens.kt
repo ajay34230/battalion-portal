@@ -53,7 +53,7 @@ fun ModelsScreen(app: VisionApp, back: () -> Unit) {
                     onPause = { com.vision.assistant.core.Downloads.pause(app, e.id) },
                     onResume = { com.vision.assistant.core.Downloads.start(app, e) },
                     onCancel = { com.vision.assistant.core.Downloads.cancel(app, e.id) },
-                    onDelete = { mgr.delete(e); com.vision.assistant.core.Downloads.cancel(app, e.id); app.engines.invalidate() },
+                    onDelete = { mgr.delete(e); app.engines.clearBad(e.id); com.vision.assistant.core.Downloads.cancel(app, e.id); app.engines.invalidate() },
                 )
             }
         }
@@ -62,7 +62,7 @@ fun ModelsScreen(app: VisionApp, back: () -> Unit) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirm = null },
             title = { Text("Download ${e.title}?") },
-            text = { Text("Size: ${e.sizeMb} MB. This uses your internet data (Wi-Fi recommended) and storage. Source: ${java.net.URL(e.url).host}. You can pause or cancel any time.") },
+            text = { Text((if (e.experimental) "⚠ EXPERIMENTAL. This model is bigger than your phone's real RAM allows safely (needs roughly 9–10 GB while running). Extended/virtual RAM does not help much: it is slow storage. It may be very slow or close VISION; if it fails to load, VISION marks it as bad and goes back to a smaller model automatically.\n\n" else "") + "Size: ${e.sizeMb} MB. This uses your internet data (Wi-Fi recommended) and storage. Source: ${java.net.URL(e.url).host}. You can pause or cancel any time.") },
             confirmButton = { Button(onClick = { com.vision.assistant.core.Downloads.start(app, e); confirm = null }) { Text("Download") } },
             dismissButton = { OutlinedButton(onClick = { confirm = null }) { Text("Cancel") } },
         )

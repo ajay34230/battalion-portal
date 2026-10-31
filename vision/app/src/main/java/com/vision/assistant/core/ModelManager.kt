@@ -39,6 +39,7 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
     fun discardPart(e: ResourceEntry) { part(e).delete() }
 
     fun compatible(e: ResourceEntry): Boolean =
+        if (e.experimental) e.kind == ResourceKind.LLM && profile.is64Bit && e.sizeMb + 1_024 <= profile.freeStorageMb else
         profile.totalRamMb >= e.minRamMb &&
             (e.kind != ResourceKind.LLM || profile.is64Bit) &&
             TierPolicy.modelFits(e.sizeMb, profile.totalRamMb, profile.freeStorageMb)
