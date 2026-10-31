@@ -27,6 +27,7 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
 
     /** Called when a generation did not finish in time; the provider throws this engine away and builds a fresh one (on the CPU). */
     var onStall: (() -> Unit)? = null
+    var onAnswered: (() -> Unit)? = null
 
     private suspend fun generate(system: String, prompt: String): String = lock.withLock {
         // The native call cannot be interrupted, so it runs on its own thread and we stop WAITING after a limit; a stuck model can never freeze the app.
@@ -34,7 +35,7 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
             // "/no_think" turns off Qwen3's long reasoning so replies stay fast.
             LlmText.clean(bridge.generate(system, if (noThink) "$prompt /no_think" else prompt))
         }
-        kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) { work.await() } ?: run { onStall?.invoke(); throw java.io.IOException("The model did not answer within ${TIMEOUT_MS / 1000} seconds, so I reset it. Try again (it will use the CPU now).") }
+        kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) { work.await() }?.also { if (it.isNotBlank()) onAnswered?.invoke() } ?: run { onStall?.invoke(); throw java.io.IOException("The model did not answer within ${TIMEOUT_MS / 1000} seconds, so I reset it. Try again (it will use the CPU now).") }
     }
 
     companion object { const val TIMEOUT_MS = 120_000L }

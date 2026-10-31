@@ -81,7 +81,7 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
             else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 fun pick(id: String) { chosen = id; app.engines.setPreferred(id); app.appScope.launch { try { app.engines.current() } catch (_: Throwable) {} } }
                 androidx.compose.material3.FilterChip(selected = chosen == "auto", onClick = { pick("auto") }, label = { Text("Automatic (strongest that fits)") })
-                for (m in installedLlms) androidx.compose.material3.FilterChip(selected = chosen == m.id, onClick = { pick(m.id) }, label = { Text(m.title + if (m.experimental) "  (experimental)" else "") })
+                for (m in installedLlms) androidx.compose.material3.FilterChip(selected = chosen == m.id, onClick = { pick(m.id) }, label = { Text(m.title + (if (m.experimental) "  (experimental)" else "") + "  ·  " + app.engines.status(m).label) })
                 Text("Switching reloads the model; the first answer after a switch is slower. Smaller models answer faster.", fontSize = 11.sp, color = VisionColors.Muted)
             }
         }

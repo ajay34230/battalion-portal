@@ -3,6 +3,8 @@ package com.vision.assistant.ai
 import com.vision.assistant.VisionApp
 import com.vision.assistant.core.Downloads
 import com.vision.assistant.core.InstallState
+import com.vision.assistant.core.ModelLifecycle
+import com.vision.assistant.core.ModelStatus
 import com.vision.assistant.core.ResourceEntry
 import com.vision.assistant.core.ResourceKind
 import com.vision.assistant.core.ResourceManifest
@@ -21,6 +23,10 @@ class EngineProvider(private val app: VisionApp) {
     private var currentId: String? = null
     val label = MutableStateFlow("Checking language model…")
     var lastError: String? = null; private set
+    private val answered = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
+    /** Lifecycle state of one model on this phone (see [ModelStatus]). */
+    fun status(e: ResourceEntry): ModelStatus = ModelLifecycle.status(Downloads.manager(app).state(e), e.id in badModels(), currentId == e.id && current is LiteRtLmEngine, e.id in answered)
 
     suspend fun current(): LlmEngine = select(needImage = false)!!
 
@@ -71,6 +77,7 @@ class EngineProvider(private val app: VisionApp) {
             try {
                 val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
                 e.onStall = { abandon(entry.id) }
+                e.onAnswered = { answered.add(entry.id) }
                 e.load(tryGpu = useGpu)
                 prefs.edit().remove("loading").remove("loading_gpu").apply()
                 current = e; currentId = entry.id; lastError = null
