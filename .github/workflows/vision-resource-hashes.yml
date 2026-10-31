@@ -14,16 +14,15 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, urllib.request, subprocess
-          repos = ["litert-community/Qwen3.5-4B","litert-community/Qwen3.5-2B","litert-community/Qwen3.5-0.8B","litert-community/Qwen3.5-9B",
-                   "litert-community/gemma-4-E4B-it-litert-lm","litert-community/gemma-4-E2B-it-litert-lm"]
+          repos = ["litert-community/gemma-4-E4B-it-litert-lm","litert-community/gemma-4-E2B-it-litert-lm"]
           for repo in repos:
             try:
-              tree = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main"))
+              tree = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true"))
             except Exception as e:
               print(f"::notice title=HASH::{repo} NOT FOUND/ERROR {e}"); continue
             for it in tree:
               fn = it.get("path","")
-              if not fn.endswith(".litertlm"): continue
+              if not (fn.endswith(".litertlm") or fn.endswith(".task")): continue
               lfs = it.get("lfs") or {}
               code = subprocess.run(["curl","-sIL","-o","/dev/null","-w","%{http_code}",f"https://huggingface.co/{repo}/resolve/main/{fn}"],capture_output=True,text=True).stdout
               print(f"::notice title=HASH::{repo} {fn} size={lfs.get('size')} sha256={lfs.get('oid')} anonymous_http={code}")
