@@ -20,7 +20,11 @@
 |---|---|
 | 0 Audit docs | done (ARCHITECTURE_AUDIT, BUGS_AND_RISKS, FEATURE_IMPLEMENTATION_MAP, UPGRADE_ROADMAP, REGRESSION_TEST_PLAN) |
 | 1 Data/file/ZIP safety + encryption | done: CI green on 03a25e6 (new unit tests SafeZip, AesGcm, rotation, Termux safety passed). Device checks BLOCKED |
-| 2-12 | not started |
+| 7 Security hardening | done, CI green (exports guarded by test, FileProvider narrowed, no cleartext, WebView locked down) |
+| 8 Model states | done, CI green (Not downloaded / Downloaded / Installed / Loaded / Ready / Failed in Settings) |
+| 2 Memory | done, CI green: BM25 + fuzzy hybrid, importance/confidence, duplicate + contradiction handling, Edit; DB migration 4->5 BLOCKED until tested on the phone. Neural embeddings NOT built (hook only) |
+| Diagnostics (user request) | done, CI green: reply/plan/load timings, crashes, stalls; Settings > Diagnostics > Share log |
+| 4, 3, 5, 6, 9-12 | not started |
 
 ### Phase 1 changes
 - Room: destructive fallback removed; explicit migrations only; schema export on; backup before upgrade; `quick_check` after open; unusable DB moved to `files/db_backups` (never deleted) with a notice. API for manual backup / restore-on-next-start exists (`DbSafety`); Settings UI for it is not built yet.
