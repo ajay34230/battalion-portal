@@ -19,7 +19,7 @@
 | Mission phase | Status |
 |---|---|
 | 0 Audit docs | done (ARCHITECTURE_AUDIT, BUGS_AND_RISKS, FEATURE_IMPLEMENTATION_MAP, UPGRADE_ROADMAP, REGRESSION_TEST_PLAN) |
-| 1 Data/file/ZIP safety + encryption | code pushed; CI result below. Device checks BLOCKED (see REGRESSION_TEST_PLAN) |
+| 1 Data/file/ZIP safety + encryption | done: CI green on 03a25e6 (new unit tests SafeZip, AesGcm, rotation, Termux safety passed). Device checks BLOCKED |
 | 2-12 | not started |
 
 ### Phase 1 changes
