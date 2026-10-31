@@ -11,3 +11,5 @@ Added since: reminders/event planner, event and learning parsers, coding module 
 
 ## Batch: widget / wake word / Coding extras / Money
 CI run 41176404049 (commit fe1d319): everything compiled; 130 of 131 unit tests passed; 1 failed (`reminderWeeklySunday`) because the calendar phrase matcher caught "my schedule" inside a reminder. Fixed in the next commit (see CI result below once recorded). New tests: PaymentParserTest, PaymentReviewTest, GmailParseTest, VisualAndGitTest, WakeWordTest. Nothing here has been run on a phone.
+
+CI run 41177132780 (commit 207c27a): build and all unit tests passed (GRADLE_BUILD_AND_TESTS_OK); the earlier failing reminder test is fixed. Release `vision-dev-48` published. Still nothing run on a phone.
