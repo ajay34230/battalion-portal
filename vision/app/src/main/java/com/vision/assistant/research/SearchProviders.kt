@@ -19,7 +19,11 @@ internal fun httpGet(url: String, accept: String = "application/json", maxBytes:
         setRequestProperty("Accept", accept)
     }
     if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
-    return c.inputStream.use { it.readNBytes(maxBytes).toString(Charsets.UTF_8) }
+    return c.inputStream.use { ins ->
+        val out = java.io.ByteArrayOutputStream(); val buf = ByteArray(8192); var total = 0
+        while (total < maxBytes) { val n = ins.read(buf, 0, minOf(buf.size, maxBytes - total)); if (n < 0) break; out.write(buf, 0, n); total += n }
+        out.toString("UTF-8")
+    }
 }
 
 /** Official MediaWiki API (keyless, allowed with a descriptive User-Agent). */
@@ -72,7 +76,7 @@ class BraveSearch(private val apiKey: String) : SearchProvider {
             setRequestProperty("Accept", "application/json"); setRequestProperty("X-Subscription-Token", apiKey)
         }
         if (c.responseCode !in 200..299) error("Brave HTTP ${c.responseCode}")
-        return parse(c.inputStream.use { it.readNBytes(2_000_000).toString(Charsets.UTF_8) }, max)
+        return parse(c.inputStream.use { ins -> val o = java.io.ByteArrayOutputStream(); val b = ByteArray(8192); var t = 0; while (t < 2_000_000) { val n = ins.read(b, 0, minOf(b.size, 2_000_000 - t)); if (n < 0) break; o.write(b, 0, n); t += n }; o.toString("UTF-8") }, max)
     }
 
     companion object {

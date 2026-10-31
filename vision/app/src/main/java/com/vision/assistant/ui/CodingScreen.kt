@@ -7,6 +7,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -181,6 +183,14 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                     OutlinedTextField(newFile, { newFile = it }, Modifier.weight(1f), singleLine = true, label = { Text("New file (e.g. js/app.js)") })
                     Button(enabled = newFile.isNotBlank(), onClick = { store.write(name, newFile, "").onSuccess { openFile = newFile.trim(); editor = TextFieldValue(""); newFile = ""; reload(); tab = "Editor" }.onFailure { status = it.message.orEmpty() } }) { Text("Add") }
                 }
+                var q by remember { mutableStateOf("") }
+                OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Search in all files") })
+                val hits = remember(q, files, dirty) { studio.searchFiles(name, q) }
+                if (hits.isNotEmpty()) {
+                    Column(Modifier.fillMaxWidth().height(110.dp).verticalScroll(rememberScrollState())) {
+                        for (h in hits) Text("${h.file}:${h.line}  ${h.text}", fontFamily = FontFamily.Monospace, fontSize = 11.sp, modifier = Modifier.clickable { if (dirty) save(); openFile = h.file; editor = TextFieldValue(store.read(name, h.file) ?: ""); dirty = false; find = q; tab = "Editor" }.padding(vertical = 2.dp))
+                    }
+                }
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(files) { f ->
                         InfoCard(onClick = { if (dirty) save(); openFile = f; editor = TextFieldValue(store.read(name, f) ?: ""); dirty = false; tab = "Editor" }) {
@@ -265,8 +275,10 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
             "Ask VISION" -> Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 Text("Describe what to build or change. Uses the installed on-device model; your code never leaves the phone. A snapshot is saved first so you can roll back.", fontSize = 12.sp, color = VisionColors.Muted)
                 OutlinedTextField(request, { request = it }, Modifier.fillMaxWidth(), minLines = 3, label = { Text("e.g. “add a dark mode toggle”") })
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(enabled = request.isNotBlank() && !busy, onClick = { busy = true; scope.launch { output = studio.build(name, request.trim()); busy = false; reload(); openFile?.let { editor = TextFieldValue(store.read(name, it) ?: ""); dirty = false } } }) { Text("Build / change") }
+                    OutlinedButton(enabled = request.isNotBlank() && !busy, onClick = { busy = true; scope.launch { output = studio.research(request.trim()); busy = false } }) { Text("Research") }
+                    OutlinedButton(enabled = request.isNotBlank() && !busy, onClick = { busy = true; scope.launch { output = studio.compareApproaches(request.trim()); busy = false } }) { Text("Compare approaches") }
                     OutlinedButton(enabled = !busy, onClick = { busy = true; scope.launch { val r = studio.autoFix(name); output = r.log.joinToString("\n") + (if (r.remaining.isNotEmpty()) "\nRemaining:\n" + r.remaining.joinToString("\n") { "• $it" } else ""); busy = false; reload(); openFile?.let { editor = TextFieldValue(store.read(name, it) ?: ""); dirty = false } } }) { Text("Find & fix errors") }
                 }
                 if (busy) Text("Working… on-device models can take a minute.", color = VisionColors.Cyan)

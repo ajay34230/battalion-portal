@@ -41,6 +41,8 @@ jobs:
           ls -R "$A" | head -40
           echo "== A. calculator logic (node) =="
           (cd "$A/calculator" && node test.js)
+          echo "== D. dashboard logic (node) =="
+          (cd "$A/dashboard" && node test.js)
           echo "== B. python utility on sample file + its tests =="
           (cd "$A/csv-report" && python3 report.py sample.csv && python3 test_report.py -v)
           echo "== C. website: pages exist and every local link resolves =="

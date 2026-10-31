@@ -196,6 +196,114 @@ footer { text-align: center; color: #6b7c90; padding: 24px; }
         "README.md" to "# My Site\n\nOpen `index.html` in Live Preview. Pages link to each other; styles are in `css/site.css`.\n",
     ))
 
-    val all = listOf(calculator, csvTool, website)
+    val dashboard = Template("dashboard", "Dashboard (light/dark)", "A responsive dashboard with design tokens, light and dark mode, stat cards, a bar chart and a working add-expense form (saved in the browser).", mapOf(
+        "index.html" to """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Expense dashboard">
+<title>Expenses</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="bar"><h1>Expenses</h1><button id="theme" class="ghost" aria-label="Toggle dark mode">🌓</button></header>
+<main>
+  <section class="stats" aria-label="Summary">
+    <div class="card"><span class="label">This month</span><strong id="total">0</strong></div>
+    <div class="card"><span class="label">Entries</span><strong id="count">0</strong></div>
+    <div class="card"><span class="label">Largest</span><strong id="max">0</strong></div>
+  </section>
+  <section class="card"><h2>By category</h2><div id="chart" class="chart" role="img" aria-label="Bar chart of spending by category"></div><p id="empty" class="muted">No expenses yet. Add one below.</p></section>
+  <section class="card"><h2>Add expense</h2>
+    <form id="form">
+      <label>Category <select id="cat"><option>Food</option><option>Travel</option><option>Bills</option><option>Other</option></select></label>
+      <label>Amount <input id="amt" type="number" min="0.01" step="0.01" required></label>
+      <button class="primary">Add</button>
+    </form>
+  </section>
+</main>
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+""",
+        "tokens.css" to """:root {
+  --bg: #f4f7fb; --surface: #ffffff; --text: #14202e; --muted: #5d6f84; --primary: #0a8aa6; --primary-contrast: #ffffff; --border: #d8e2ee;
+  --radius: 16px; --space: 16px; --shadow: 0 6px 24px rgba(10, 40, 70, .08);
+}
+[data-theme="dark"] { --bg: #0b1220; --surface: #121c30; --text: #e6f3ff; --muted: #8fa8c4; --primary: #00d4f0; --primary-contrast: #00222b; --border: #243452; --shadow: 0 6px 24px rgba(0, 0, 0, .35); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0b1220; --surface: #121c30; --text: #e6f3ff; --muted: #8fa8c4; --primary: #00d4f0; --primary-contrast: #00222b; --border: #243452; --shadow: 0 6px 24px rgba(0, 0, 0, .35); } }
+""",
+        "app.css" to """* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+.bar { display: flex; justify-content: space-between; align-items: center; padding: var(--space); }
+h1 { margin: 0; font-size: 1.4rem; } h2 { margin: 0 0 8px; font-size: 1rem; }
+main { display: grid; gap: var(--space); padding: 0 var(--space) var(--space); max-width: 900px; margin: 0 auto; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space); box-shadow: var(--shadow); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space); }
+.label, .muted { color: var(--muted); font-size: .85rem; } .stats strong { display: block; font-size: 1.5rem; margin-top: 4px; }
+.chart { display: flex; align-items: flex-end; gap: 12px; height: 160px; } .bar-col { flex: 1; text-align: center; font-size: .8rem; }
+.bar-col .fill { background: var(--primary); border-radius: 8px 8px 0 0; min-height: 2px; transition: height .4s ease; }
+form { display: grid; gap: 12px; } label { display: grid; gap: 4px; }
+input, select { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
+.primary { padding: 12px; border: 0; border-radius: 12px; background: var(--primary); color: var(--primary-contrast); font: inherit; font-weight: 600; }
+.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 8px 12px; font-size: 1.1rem; }
+button { min-height: 44px; } @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (min-width: 720px) { form { grid-template-columns: 1fr 1fr auto; align-items: end; } }
+""",
+        "logic.js" to """// Pure data logic (no DOM) so it can be tested with Node.
+function summarize(expenses) {
+  const byCat = {};
+  let total = 0, max = 0;
+  for (const e of expenses) {
+    const a = Number(e.amount);
+    if (!isFinite(a) || a <= 0) continue;
+    byCat[e.category] = (byCat[e.category] || 0) + a;
+    total += a; if (a > max) max = a;
+  }
+  return { total: Math.round(total * 100) / 100, count: expenses.filter((e) => Number(e.amount) > 0).length, max, byCat };
+}
+if (typeof module !== "undefined") module.exports = { summarize };
+""",
+        "app.js" to """const KEY = "expenses-v1";
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
+function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* storage may be unavailable */ } }
+let expenses = load();
+function render() {
+  const s = summarize(expenses);
+  document.getElementById("total").textContent = s.total;
+  document.getElementById("count").textContent = s.count;
+  document.getElementById("max").textContent = s.max;
+  const cats = Object.keys(s.byCat), top = Math.max(1, ...Object.values(s.byCat));
+  document.getElementById("empty").hidden = cats.length > 0;
+  document.getElementById("chart").innerHTML = cats.map((c) => '<div class="bar-col"><div class="fill" style="height:' + Math.round((s.byCat[c] / top) * 130) + 'px"></div>' + c + '</div>').join("");
+}
+document.getElementById("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const amount = parseFloat(document.getElementById("amt").value);
+  if (!(amount > 0)) return;
+  expenses.push({ category: document.getElementById("cat").value, amount });
+  save(expenses); document.getElementById("amt").value = ""; render();
+});
+document.getElementById("theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+});
+render();
+""",
+        "test.js" to """const assert = require("assert");
+const { summarize } = require("./logic.js");
+const s = summarize([{ category: "Food", amount: 100.5 }, { category: "Food", amount: 49.5 }, { category: "Travel", amount: "250" }, { category: "Bad", amount: -5 }, { category: "Bad", amount: "x" }]);
+assert.strictEqual(s.total, 400); assert.strictEqual(s.count, 3); assert.strictEqual(s.max, 250);
+assert.deepStrictEqual(s.byCat, { Food: 150, Travel: 250 });
+assert.deepStrictEqual(summarize([]), { total: 0, count: 0, max: 0, byCat: {} });
+console.log("dashboard logic tests passed");
+""",
+        "README.md" to "# Expense dashboard\n\nOpen `index.html` in Live Preview. Colours/spacing are tokens in `tokens.css` (light + dark). `node test.js` tests the logic.\n",
+    ))
+
+    val all = listOf(calculator, csvTool, website, dashboard)
     fun byId(id: String) = all.firstOrNull { it.id == id }
 }

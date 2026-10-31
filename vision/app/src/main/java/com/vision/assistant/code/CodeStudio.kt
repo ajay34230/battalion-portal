@@ -47,6 +47,34 @@ class CodeStudio(private val app: VisionApp, private val ctx: Context) {
         return loop.run(name).also { log("Auto-fix '$name': fixed=${it.fixed} rounds=${it.rounds}") }
     }
 
+    /** Researches a programming question on GitHub, Stack Overflow and MDN, remembers what was found, and logs it. */
+    suspend fun research(question: String): String {
+        val (sources, problems) = com.vision.assistant.research.DevResearch.search(question)
+        val text = com.vision.assistant.research.DevResearch.format(sources, problems)
+        log("Research: $question -> ${sources.size} sources")
+        if (sources.isNotEmpty()) app.database.memory().insert(com.vision.assistant.data.MemoryItem(category = "research", content = "Coding research: ${question.take(80)} — " + sources.take(3).joinToString("; ") { it.title + " " + it.url }, source = "dev-research"))
+        return text
+    }
+
+    /** Critical-logic step: the model compares two approaches (complexity, risks) and proposes tests. Plain advice — the tests still have to be run. */
+    suspend fun compareApproaches(problem: String): String {
+        val engine = app.engines.current()
+        if (!engine.isNeuralModelLoaded) return "No language model is installed, so I can't compare approaches. Install one in Models & downloads."
+        return engine.complete("You are a careful senior engineer. Be precise and honest about uncertainty.", com.vision.assistant.research.DevResearch.comparePrompt(problem)) ?: "The model did not answer."
+    }
+
+    data class Match(val file: String, val line: Int, val text: String)
+    /** Case-insensitive text search across every readable file of a project. */
+    fun searchFiles(name: String, query: String, max: Int = 60): List<Match> {
+        if (query.length < 2) return emptyList()
+        val out = ArrayList<Match>()
+        for (f in store.files(name)) {
+            val t = store.read(name, f) ?: continue
+            t.lineSequence().forEachIndexed { i, l -> if (out.size < max && l.contains(query, ignoreCase = true)) out.add(Match(f, i + 1, l.trim().take(120))) }
+        }
+        return out
+    }
+
     fun problems(name: String): List<Problem> {
         val files = store.files(name)
         return StaticChecker.check(files.associateWith { store.read(name, it).orEmpty() })
