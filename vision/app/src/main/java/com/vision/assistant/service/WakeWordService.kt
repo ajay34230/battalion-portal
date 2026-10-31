@@ -40,6 +40,10 @@ object WakeWord {
     /** True when [heard] contains the wake phrase ("hey vision", "ok vision" ...). */
     fun matches(heard: String) = phrase.containsMatchIn(heard.lowercase().trim())
     const val GRAMMAR = "[\"hey vision\",\"ok vision\",\"okay vision\",\"hello vision\",\"hi vision\",\"[unk]\"]"
+    /** Once the user has taught VISION their voice, plain "Vision" also wakes it (the voiceprint check keeps false triggers down). */
+    const val GRAMMAR_ENROLLED = "[\"hey vision\",\"ok vision\",\"okay vision\",\"hello vision\",\"hi vision\",\"vision\",\"[unk]\"]"
+    private val bare = Regex("^\\s*vision\\s*$")
+    fun matchesEnrolled(heard: String) = matches(heard) || bare.containsMatchIn(heard.lowercase())
 }
 
 /**
@@ -51,6 +55,9 @@ object WakeWord {
 class WakeWordService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var model: Model? = null
+    private var spkModel: org.vosk.SpeakerModel? = null
+    private var voiceprint: List<DoubleArray> = emptyList()
+    private var strictness = com.vision.assistant.voice.Voiceprint.Strictness.NORMAL
     private var speech: SpeechService? = null
     private var session: Job? = null
     private lateinit var stt: SpeechInput
@@ -74,6 +81,13 @@ class WakeWordService : Service() {
             if (dir == null) { updateNotification("Needs the offline English voice model (Models & downloads)"); delay(4000); stopSelf(); return@launch }
             model = model ?: withContext(Dispatchers.IO) { try { Model(dir.absolutePath) } catch (_: Throwable) { null } }
             if (model == null) { updateNotification("Could not load the voice model"); delay(4000); stopSelf(); return@launch }
+            voiceprint = com.vision.assistant.voice.Voiceprint.load(this@WakeWordService)
+            strictness = com.vision.assistant.voice.Voiceprint.strictness(this@WakeWordService)
+            if (voiceprint.size >= 4 && com.vision.assistant.research.Prefs.voiceOnly(this@WakeWordService)) {
+                val sd = Downloads.manager(application as VisionApp).voskDir("vosk-spk")
+                spkModel = if (sd == null) null else withContext(Dispatchers.IO) { try { org.vosk.SpeakerModel(sd.absolutePath) } catch (_: Throwable) { null } }
+                if (spkModel == null) updateNotification("Voice check unavailable (speaker model missing): answering to any voice")
+            }
             spot()
         }
         return START_STICKY
@@ -83,16 +97,24 @@ class WakeWordService : Service() {
         val m = model ?: return
         try { speech?.stop(); speech?.shutdown() } catch (_: Throwable) {}
         try {
-            val s = SpeechService(Recognizer(m, 16000f, WakeWord.GRAMMAR), 16000f)
+            val verify = spkModel != null && voiceprint.isNotEmpty()
+            val rec = Recognizer(m, 16000f, if (verify || voiceprint.size >= 4) WakeWord.GRAMMAR_ENROLLED else WakeWord.GRAMMAR)
+            if (verify) rec.setSpeakerModel(spkModel)
+            val s = SpeechService(rec, 16000f)
             speech = s
             val l = object : RecognitionListener {
-                private fun check(h: String?) {
+                private fun check(h: String?, final: Boolean) {
                     val t = try { JSONObject(h ?: "{}").let { it.optString("text").ifBlank { it.optString("partial") } } } catch (_: Exception) { "" }
-                    if (!busy && WakeWord.matches(t)) onWake()
+                    if (busy) return
+                    if (!verify) { if (WakeWord.matches(t)) onWake(); return }
+                    // With "only my voice" on, wait for the end of the phrase (final result carries the speaker vector) and compare.
+                    if (!final || !WakeWord.matchesEnrolled(t)) return
+                    val v = com.vision.assistant.voice.Voiceprint.vectorFrom(h ?: "") ?: return
+                    if (com.vision.assistant.voice.Voiceprint.matches(v, voiceprint, strictness)) onWake()
                 }
-                override fun onPartialResult(hypothesis: String?) = check(hypothesis)
-                override fun onResult(hypothesis: String?) = check(hypothesis)
-                override fun onFinalResult(hypothesis: String?) = check(hypothesis)
+                override fun onPartialResult(hypothesis: String?) = check(hypothesis, false)
+                override fun onResult(hypothesis: String?) = check(hypothesis, true)
+                override fun onFinalResult(hypothesis: String?) = check(hypothesis, true)
                 override fun onError(exception: Exception?) { scope.launch { delay(2000); if (!busy) spot() } }
                 override fun onTimeout() { if (!busy) scope.launch { spot() } }
             }
@@ -133,7 +155,7 @@ class WakeWordService : Service() {
 
     private fun updateNotification(text: String) { (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(2, notification(text)) }
 
-    override fun onDestroy() { scope.cancel(); try { speech?.stop(); speech?.shutdown() } catch (_: Throwable) {}; try { model?.close() } catch (_: Throwable) {}; stt.stop(); speaker.shutdown(); super.onDestroy() }
+    override fun onDestroy() { scope.cancel(); try { speech?.stop(); speech?.shutdown() } catch (_: Throwable) {}; try { model?.close() } catch (_: Throwable) {}; try { spkModel?.close() } catch (_: Throwable) {}; stt.stop(); speaker.shutdown(); super.onDestroy() }
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {

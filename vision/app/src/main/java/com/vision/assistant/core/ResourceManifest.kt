@@ -87,6 +87,12 @@ object ResourceManifest {
             "Apache-2.0", "en",
         ),
         ResourceEntry(
+            "vosk-spk", ResourceKind.STT, "Vosk speaker model — recognises YOUR voice for Hey Vision",
+            "https://alphacephei.com/vosk/models/vosk-model-spk-0.4.zip", "vosk-model-spk-0.4.zip",
+            "a74d8f51144484813e16af689bb0f916b7a111e2347f467c4933c1166097b5a7", 13_869_103, 300,
+            "Apache-2.0", "any",
+        ),
+        ResourceEntry(
             "vosk-small-hi", ResourceKind.STT, "Vosk small Hindi — offline speech",
             "https://alphacephei.com/vosk/models/vosk-model-small-hi-0.22.zip", "vosk-model-small-hi-0.22.zip",
             "7c50a10866889f0ac21d912c20537a055a597ed09fc1d3e5bcd798f9f0017e48", 44_458_845, 1_000,

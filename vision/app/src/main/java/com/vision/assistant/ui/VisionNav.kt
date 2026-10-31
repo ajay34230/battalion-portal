@@ -36,6 +36,7 @@ object Routes {
     const val HEALTH = "health"
     const val ROUTINES = "routines"
     const val MONEY = "money"
+    const val VOICE = "voice"
     const val MODELS = "models"
     const val DEVICE = "device"
     const val PERMISSIONS = "permissions"
@@ -46,7 +47,7 @@ object Routes {
 
 private data class Tab(val route: String, val icon: String, val label: String)
 private val tabs = listOf(Tab(Routes.HOME, "🏠", "Home"), Tab(Routes.CHAT, "🎙", "Talk"), Tab(Routes.REMINDERS, "⏰", "Reminders"), Tab(Routes.MEMORY, "🧠", "Memory"), Tab(Routes.MORE, "☰", "More"))
-private val secondary = setOf(Routes.MONEY, Routes.ROUTINES, Routes.HEALTH, Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
+private val secondary = setOf(Routes.VOICE, Routes.MONEY, Routes.ROUTINES, Routes.HEALTH, Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
 
 @Composable
 fun VisionNav(app: VisionApp) {
@@ -87,6 +88,7 @@ fun VisionNav(app: VisionApp) {
                 composable(Routes.HEALTH) { HealthScreen(app) }
                 composable(Routes.ROUTINES) { RoutinesScreen(app) }
                 composable(Routes.MONEY) { MoneyScreen(app) }
+                composable(Routes.VOICE) { VoiceSetupScreen(app, { go(it) }) }
                 composable(Routes.MODELS) { Box(Modifier.statusBarsPadding()) { ModelsScreen(app, back) } }
                 composable(Routes.DEVICE) { Box(Modifier.statusBarsPadding()) { DeviceScreen(app.deviceProfile, back) } }
                 composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionsScreen(back) } }

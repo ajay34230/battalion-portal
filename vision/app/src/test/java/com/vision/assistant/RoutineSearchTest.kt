@@ -92,3 +92,19 @@ class ModelPlanTest {
     @org.junit.Test fun routine() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.RunRoutine("morning"), p("""{"intent":"routine","name":"morning"}"""))
     @org.junit.Test fun searchMode() = org.junit.Assert.assertEquals(com.vision.assistant.ai.Intent.Search("x", "deep"), p("""{"intent":"search","query":"x","mode":"deep"}"""))
 }
+
+class VoiceprintTest {
+    private val V = com.vision.assistant.voice.Voiceprint
+    @org.junit.Test fun sameDirectionIsClose() = org.junit.Assert.assertEquals(0.0, V.cosineDistance(doubleArrayOf(1.0, 2.0, 3.0), doubleArrayOf(2.0, 4.0, 6.0)), 1e-9)
+    @org.junit.Test fun oppositeIsFar() = org.junit.Assert.assertTrue(V.cosineDistance(doubleArrayOf(1.0, 0.0), doubleArrayOf(-1.0, 0.0)) > 1.9)
+    @org.junit.Test fun mismatchedSizesAreFar() = org.junit.Assert.assertEquals(2.0, V.cosineDistance(doubleArrayOf(1.0), doubleArrayOf(1.0, 2.0)), 1e-9)
+    @org.junit.Test fun matchesOwnerRejectsOther() {
+        val owner = listOf(doubleArrayOf(1.0, 0.1, 0.0), doubleArrayOf(0.9, 0.2, 0.1), doubleArrayOf(1.1, 0.0, 0.1), doubleArrayOf(1.0, 0.15, 0.05))
+        org.junit.Assert.assertTrue(V.matches(doubleArrayOf(1.0, 0.12, 0.03), owner, V.Strictness.NORMAL))
+        org.junit.Assert.assertFalse(V.matches(doubleArrayOf(0.0, 1.0, 0.2), owner, V.Strictness.NORMAL))
+    }
+    @org.junit.Test fun noEnrolmentMeansAnyone() = org.junit.Assert.assertTrue(V.matches(doubleArrayOf(1.0), emptyList(), V.Strictness.STRICT))
+    @org.junit.Test fun readsVectorFromVoskJson() { org.junit.Assert.assertArrayEquals(doubleArrayOf(0.5, -1.0), V.vectorFrom("""{"text":"hey vision","spk":[0.5,-1.0],"spk_frames":40}"""), 1e-9); org.junit.Assert.assertNull(V.vectorFrom("""{"text":"x"}""")) }
+    @org.junit.Test fun enrolmentPhraseCheck() { org.junit.Assert.assertTrue(V.isWakePhrase("hey vision")); org.junit.Assert.assertFalse(V.isWakePhrase("good morning")) }
+    @org.junit.Test fun bareVisionOnlyWhenEnrolled() { org.junit.Assert.assertTrue(com.vision.assistant.service.WakeWord.matchesEnrolled("vision")); org.junit.Assert.assertFalse(com.vision.assistant.service.WakeWord.matches("vision")) }
+}

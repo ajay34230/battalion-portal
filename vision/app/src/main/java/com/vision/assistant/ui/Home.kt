@@ -67,6 +67,16 @@ fun HomeScreen(app: VisionApp, go: (String) -> Unit, say: (String) -> Unit) {
         Text("Tap me to talk · Hindi, English or Hinglish", fontSize = 12.sp, color = VisionColors.Muted, textAlign = TextAlign.Center)
         Spacer(Modifier.height(18.dp))
 
+        val appCtx = androidx.compose.ui.platform.LocalContext.current
+        var hideSetup by remember { mutableStateOf(com.vision.assistant.voice.Voiceprint.enrolled(appCtx) || com.vision.assistant.voice.Voiceprint.dismissed(appCtx)) }
+        if (!hideSetup) {
+            InfoCard(onClick = { go(Routes.VOICE) }) {
+                Text("🎙 Teach VISION your voice", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Text("Say “Hey Vision”, “Vision” and “Hi Vision” a few times so it knows when you call it. Tap to start.", fontSize = 12.sp, color = VisionColors.Muted)
+                androidx.compose.material3.TextButton(onClick = { com.vision.assistant.voice.Voiceprint.dismiss(appCtx); hideSetup = true }) { Text("Not now") }
+            }
+            Spacer(Modifier.height(10.dp))
+        }
         if (upcoming.isNotEmpty()) {
             Row(Modifier.fillMaxWidth()) { SectionLabel("Coming up") }
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -98,6 +108,7 @@ private data class Entry(val icon: String, val title: String, val sub: String, v
 @Composable
 fun MoreScreen(app: VisionApp, go: (String) -> Unit) {
     val entries = listOf(
+        Entry("🎙", "Voice setup", "Teach VISION to recognise your voice", Routes.VOICE),
         Entry("₹", "Money", "Payments paid & received, from notifications", Routes.MONEY),
         Entry("▶", "Routines", "One phrase, many steps — or scheduled", Routes.ROUTINES),
         Entry("🩺", "Setup & health", "Permissions, battery, voice, crashes", Routes.HEALTH),
