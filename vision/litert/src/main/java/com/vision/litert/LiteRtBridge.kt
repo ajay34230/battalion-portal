@@ -20,14 +20,22 @@ class LiteRtBridge {
     fun load(modelPath: String, cacheDir: String, vision: Boolean = false, tryGpu: Boolean = false) {
         gpuError = null
         if (tryGpu) {
-            try {
-                enableSpeculativeDecoding()
-                val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.GPU(), visionBackend = Backend.GPU(), cacheDir = cacheDir)
-                else EngineConfig(modelPath = modelPath, backend = Backend.GPU(), cacheDir = cacheDir)
-                val e = Engine(cfg); e.initialize(); engine = e
-                generate("Reply with one word.", "Hi") // compile the GPU kernels now, inside the crash-guarded window
-                backendName = "GPU"; return
-            } catch (t: Throwable) { gpuError = (t.message ?: t.javaClass.simpleName).take(160); close() }
+            // Ladder: GPU with multi-token prediction -> plain GPU -> CPU. MTP needs a model file made for it; without one GPU init can fail.
+            for (mtp in listOf(true, false)) {
+                try {
+                    setSpeculativeDecoding(mtp)
+                    val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.GPU(), visionBackend = Backend.GPU(), cacheDir = cacheDir)
+                    else EngineConfig(modelPath = modelPath, backend = Backend.GPU(), cacheDir = cacheDir)
+                    val e = Engine(cfg); e.initialize(); engine = e
+                    generate("Reply with one word.", "Hi") // compile the GPU kernels now, inside the crash-guarded window
+                    backendName = "GPU"; speculative = mtp && speculativeApplied; gpuError = null; return
+                } catch (t: Throwable) {
+                    val why = (t.message ?: t.javaClass.simpleName).take(120)
+                    gpuError = (if (mtp) "MTP: " else "plain: ") + why + (gpuError?.let { " | $it" } ?: "")
+                    close()
+                }
+            }
+            setSpeculativeDecoding(false)
         }
         val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.CPU(), visionBackend = Backend.CPU(), cacheDir = cacheDir)
         else EngineConfig(modelPath = modelPath, backend = Backend.CPU(), cacheDir = cacheDir)
@@ -37,13 +45,14 @@ class LiteRtBridge {
     }
 
     /** Multi-token prediction: Google recommends it on GPU (faster replies). Set by reflection so an older library simply ignores it. */
-    private fun enableSpeculativeDecoding() {
-        try {
+    private var speculativeApplied = false
+    private fun setSpeculativeDecoding(on: Boolean) {
+        speculativeApplied = try {
             val c = Class.forName("com.google.ai.edge.litertlm.ExperimentalFlags")
             val inst = c.getField("INSTANCE").get(null)
-            c.getMethod("setEnableSpeculativeDecoding", Boolean::class.javaPrimitiveType).invoke(inst, true)
-            speculative = true
-        } catch (_: Throwable) { speculative = false }
+            c.getMethod("setEnableSpeculativeDecoding", Boolean::class.javaPrimitiveType).invoke(inst, on)
+            on
+        } catch (_: Throwable) { false }
     }
     var speculative = false; private set
 
