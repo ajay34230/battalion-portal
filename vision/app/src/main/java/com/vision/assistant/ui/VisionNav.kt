@@ -91,7 +91,7 @@ fun VisionNav(app: VisionApp) {
                 composable(Routes.HEALTH) { HealthScreen(app) }
                 composable(Routes.ROUTINES) { RoutinesScreen(app) }
                 composable(Routes.MONEY) { MoneyScreen(app) }
-                composable(Routes.VOICE) { VoiceSetupScreen(app, { go(it) }) }
+                composable(Routes.VOICE) { VoiceSetupScreen(app) { nav.navigate(it) { launchSingleTop = true } } }
                 composable(Routes.MODELS) { Box(Modifier.statusBarsPadding()) { ModelsScreen(app, back) } }
                 composable(Routes.DEVICE) { Box(Modifier.statusBarsPadding()) { DeviceScreen(app.deviceProfile, back) } }
                 composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionCenterScreen(startup = false) { back() } } }
