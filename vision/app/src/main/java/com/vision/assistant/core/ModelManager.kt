@@ -60,33 +60,18 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
         if (!compatible(e)) return@withContext DownloadResult.Failed("Not compatible with this device (RAM, storage or 32-bit CPU).")
         val p = part(e)
         try {
-            val existing = if (p.exists()) p.length() else 0L
-            val conn = (URL(e.url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 20_000; readTimeout = 60_000; instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "VISION-Android/0.1")
-                if (existing > 0) setRequestProperty("Range", "bytes=$existing-")
-            }
-            val code = conn.responseCode
-            if (code == 416 && existing > 0) { /* already complete */ }
-            else if (code != 200 && code != 206) return@withContext DownloadResult.Failed("HTTP $code")
-            else {
-                val resumed = code == 206
-                val total = if (e.sizeBytes > 0) e.sizeBytes else -1L
-                RandomAccessFile(p, "rw").use { raf ->
-                    if (resumed) raf.seek(existing) else raf.setLength(0)
-                    var done = if (resumed) existing else 0L
-                    conn.inputStream.use { input ->
-                        val buf = ByteArray(1 shl 16)
-                        while (true) {
-                            kotlin.coroutines.coroutineContext.ensureActive()
-                            val n = input.read(buf)
-                            if (n < 0) break
-                            raf.write(buf, 0, n)
-                            done += n
-                            onProgress(done, total)
-                        }
-                    }
-                }
+            // Slow or dropped connections are normal on phones: keep resuming from the .part file instead of failing.
+            var attempt = 0; var lastSize = if (p.exists()) p.length() else -1L
+            while (true) {
+                kotlin.coroutines.coroutineContext.ensureActive()
+                val err = try { transfer(e, p, onProgress) } catch (ce: kotlinx.coroutines.CancellationException) { throw ce } catch (io: java.io.IOException) { io.message ?: io.javaClass.simpleName }
+                if (err == null) break
+                if (err.startsWith("HTTP 4") && err != "HTTP 408" && err != "HTTP 429") return@withContext DownloadResult.Failed(err)
+                val size = if (p.exists()) p.length() else 0L
+                if (size > lastSize) { attempt = 0; lastSize = size } else attempt++
+                if (attempt >= 8) return@withContext DownloadResult.Failed("Network kept dropping ($err). Your progress is saved; tap Resume to continue.")
+                onPhase(DlPhase.QUEUED)
+                kotlinx.coroutines.delay(minOf(2_000L shl attempt.coerceAtMost(4), 30_000L))
             }
             val t = file(e)
             t.delete()
@@ -107,6 +92,40 @@ class ModelManager(private val dir: File, private val profile: DeviceProfile) {
         } catch (ex: Exception) {
             DownloadResult.Failed(ex.message ?: ex.javaClass.simpleName)
         }
+    }
+
+    /** One connection attempt, resuming from the .part file. Returns null on success or an error text. Throws IOException on timeouts/drops. */
+    private suspend fun transfer(e: ResourceEntry, p: File, onProgress: (Long, Long) -> Unit): String? {
+        val existing = if (p.exists()) p.length() else 0L
+        val conn = (URL(e.url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 30_000; readTimeout = 30_000; instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "VISION-Android/0.1")
+            if (existing > 0) setRequestProperty("Range", "bytes=$existing-")
+        }
+        try {
+            val code = conn.responseCode
+            if (code == 416 && existing > 0) return null // already complete
+            if (code != 200 && code != 206) return "HTTP $code"
+            val resumed = code == 206
+            val total = if (e.sizeBytes > 0) e.sizeBytes else -1L
+            RandomAccessFile(p, "rw").use { raf ->
+                if (resumed) raf.seek(existing) else raf.setLength(0)
+                var done = if (resumed) existing else 0L
+                conn.inputStream.use { input ->
+                    val buf = ByteArray(1 shl 16)
+                    while (true) {
+                        kotlin.coroutines.coroutineContext.ensureActive()
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        raf.write(buf, 0, n)
+                        done += n
+                        onProgress(done, total)
+                    }
+                }
+                if (total > 0 && done < total) return "Connection closed early"
+            }
+            return null
+        } finally { conn.disconnect() }
     }
 
     private fun unzip(e: ResourceEntry, zip: File) {

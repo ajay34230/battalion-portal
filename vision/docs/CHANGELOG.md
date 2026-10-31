@@ -29,3 +29,6 @@
 ## Voice enrolment and startup permissions
 - Voice setup (Home banner / More → Voice setup): say Hey Vision / Vision / Hi Vision; a voiceprint (numbers only) is kept on the phone and the wake word can answer only to a matching voice (Vosk speaker model, 14 MB, SHA-256 verified). Strictness Loose/Normal/Strict; delete anytime.
 - Startup permission centre: one button for microphone, notifications, contacts, calendar; guided links for Notification access, battery and Termux control.
+
+## Download reliability
+- Model downloads now retry automatically (up to 8 times with 2–30 s waits, counter resets whenever bytes arrive), resuming from the saved partial file after a timeout, reset or "connection closed early". Read timeout 30 s per attempt. Only a hard HTTP 4xx (except 408/429) stops immediately. Checksum verification is unchanged.
