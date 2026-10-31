@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,6 +40,9 @@ object PermissionCenter {
     const val TERMUX = "com.termux.permission.RUN_COMMAND"
 
     data class Item(val title: String, val why: String, val runtime: String? = null, val special: ((Context) -> Intent)? = null, val check: (Context) -> Boolean, val required: Boolean = true)
+
+    fun termuxInstalled(c: Context) = try { c.packageManager.getPackageInfo("com.termux", 0); true } catch (_: Throwable) { false }
+    const val TERMUX_SETUP = "mkdir -p ~/.termux && grep -q allow-external-apps ~/.termux/termux.properties 2>/dev/null || echo 'allow-external-apps=true' >> ~/.termux/termux.properties; termux-reload-settings"
 
     fun granted(c: Context, p: String) = ContextCompat.checkSelfPermission(c, p) == PackageManager.PERMISSION_GRANTED
     fun notificationAccess(c: Context) = Settings.Secure.getString(c.contentResolver, "enabled_notification_listeners").orEmpty().contains(c.packageName)
@@ -82,7 +86,21 @@ fun PermissionCenterScreen(startup: Boolean, onDone: () -> Unit) {
                     Text(if (ok) "✓ allowed" else "not allowed", color = if (ok) VisionColors.Mint else VisionColors.Muted, fontSize = 12.sp)
                 }
                 Text(it.why, fontSize = 12.sp, color = VisionColors.Muted)
-                if (!ok) OutlinedButton(onClick = {
+                if (!ok && it.runtime == PermissionCenter.TERMUX) {
+                    val installed = PermissionCenter.termuxInstalled(ctx)
+                    Text(if (installed) "Termux is installed." else "Termux is NOT installed. Install it from F-Droid or its GitHub releases (the Play Store version is too old and has no control feature), then come back.", fontSize = 12.sp, color = if (installed) VisionColors.Mint else Color(0xFFFFB74D))
+                    Text("Android does not show a pop-up for this one. Grant it by hand: Open app settings → Permissions → Additional permissions → “Run commands in Termux environment” → Allow. Then in Termux run the setup command below once, and fully close/reopen Termux.", fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }) { Text("Open app settings") }
+                        OutlinedButton(onClick = { one.launch(it.runtime!!) }) { Text("Try pop-up") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = {
+                            (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("termux setup", PermissionCenter.TERMUX_SETUP))
+                        }) { Text("Copy Termux setup command") }
+                        if (installed) OutlinedButton(onClick = { ctx.packageManager.getLaunchIntentForPackage("com.termux")?.let { i -> ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }) { Text("Open Termux") }
+                    }
+                } else if (!ok) OutlinedButton(onClick = {
                     val sp = it.special
                     if (sp != null) ctx.startActivity(sp(ctx).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) else one.launch(it.runtime!!)
                 }) { Text(if (it.special != null) "Open settings" else "Allow") }

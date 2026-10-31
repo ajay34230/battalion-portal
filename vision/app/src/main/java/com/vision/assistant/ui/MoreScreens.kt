@@ -193,7 +193,7 @@ fun TermuxScreen(app: VisionApp, back: () -> Unit) {
 
     fun exec(v: Validation.Ok) { msg = "Running…"; scope.launch { val r = gateway.execute(v); msg = r.fold({ "Done." }, { it.message ?: "Failed." }) } }
     fun go(l: String) {
-        if (ContextCompat.checkSelfPermission(ctx, "com.termux.permission.RUN_COMMAND") != android.content.pm.PackageManager.PERMISSION_GRANTED) { retry = l; perm.launch("com.termux.permission.RUN_COMMAND"); return }
+        if (ContextCompat.checkSelfPermission(ctx, "com.termux.permission.RUN_COMMAND") != android.content.pm.PackageManager.PERMISSION_GRANTED) { retry = l; msg = "Termux control is not allowed yet. If no pop-up appears, open More → Permissions → Termux control and follow the 3 steps there (Termux installed from F-Droid/GitHub, permission in app settings, allow-external-apps in Termux)."; perm.launch("com.termux.permission.RUN_COMMAND"); return }
         when (val v = CommandPolicy.validateLine(l, advanced)) {
             is Validation.Rejected -> msg = "Rejected: ${v.reason}"
             is Validation.Ok -> if (v.sensitive) pending = v else exec(v)
