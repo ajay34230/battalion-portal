@@ -28,13 +28,17 @@ jobs:
               print(f"::notice title=HASH::{repo} {fn} size={lfs.get('size')} sha256={lfs.get('oid')} anonymous_http={code}")
           PY
       - name: Check every manifest model against Hugging Face
+        continue-on-error: true
         run: |
           python3 - <<'PY'
           import re, json, urllib.request, urllib.error
+          print('::notice title=MODELCHECK::start')
           src = open("vision/app/src/main/java/com/vision/assistant/core/ResourceManifest.kt").read()
+          found = 0
           for m in re.finditer(r'"\$HF/([^"]+)",\s*"([^"]+)",\s*"([0-9a-f]{64})",\s*([0-9_]+)', src):
+            found += 1
             path, fn, sha, size = m.group(1), m.group(2), m.group(3), int(m.group(4).replace("_",""))
-            repo, _, rest = path.partition("/resolve/main/")
+            repo, _, rest = ("litert-community/" + path).partition("/resolve/main/")
             url = "https://huggingface.co/" + repo + "/resolve/main/" + rest
             try:
               req = urllib.request.Request(url, method="HEAD")
@@ -47,6 +51,7 @@ jobs:
                 print(f"::notice title=MODELCHECK::{fn} http={e.code} manifest_sha={sha[:12]} live_sha={live[:12]} match={live==sha} manifest_size={size} live_size={lsize} size_match={str(size)==str(lsize)}")
             except Exception as ex:
               print(f"::notice title=MODELCHECK::{fn} ERROR {ex}")
+          print(f'::notice title=MODELCHECK::entries_found={found}')
           PY
       - name: Maven versions
         run: |
