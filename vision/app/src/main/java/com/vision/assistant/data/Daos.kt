@@ -21,6 +21,7 @@ interface MemoryDao {
     @Update suspend fun update(m: MemoryItem)
     @Delete suspend fun delete(m: MemoryItem)
     @Query("SELECT * FROM memory_item ORDER BY id DESC") fun all(): Flow<List<MemoryItem>>
+    @Query("SELECT * FROM memory_item ORDER BY id DESC") suspend fun list(): List<MemoryItem>
     @Query("SELECT * FROM memory_item WHERE content LIKE '%' || :q || '%' ORDER BY id DESC LIMIT :limit")
     suspend fun search(q: String, limit: Int = 20): List<MemoryItem>
     @Query("DELETE FROM memory_item") suspend fun clear()

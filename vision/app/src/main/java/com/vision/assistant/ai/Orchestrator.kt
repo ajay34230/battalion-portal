@@ -26,6 +26,7 @@ class Orchestrator(private val app: VisionApp) {
         val db = app.database
         if (recordUser) db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
         val engine = app.engines.current()
+        val learned = if (recordUser) try { Learning.learn(db.memory(), userText) } catch (_: Throwable) { emptyList() } else emptyList()
 
         // The trained model understands the request; the rule parser is only the fallback.
         if (Identity.isCreatorQuestion(userText)) {
@@ -61,6 +62,7 @@ class Orchestrator(private val app: VisionApp) {
             is ToolResult.NeedsConfirmation -> AgentReply(r.say.`in`(lang), lang, confirm = r)
         }
         db.chat().insert(ChatMessage(role = "assistant", text = reply.text, lang = lang.code))
+        if (learned.isNotEmpty()) return reply.copy(text = reply.text + "\n\n" + Say("(I'll remember: ${learned.joinToString("; ") { it.content }})", "(Yaad rakhunga: ${learned.joinToString("; ") { it.content }})", "(याद रखूँगा: ${learned.joinToString("; ") { it.content }})").`in`(lang))
         return reply
     }
 

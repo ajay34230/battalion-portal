@@ -53,7 +53,8 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
     override suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String {
         val langName = when (lang) { Lang.HI -> "Hindi (Devanagari)"; Lang.HINGLISH -> "Hinglish (Hindi in Latin letters)"; Lang.EN -> "English" }
         val system = "${Identity.PROMPT_LINE} You are a friendly, concise assistant on the user's Android phone. Reply in $langName, in at most 3 short sentences. " +
-            "You can't perform phone actions in this reply; never claim you did something."
+            "You can't perform phone actions in this reply; never claim you did something." +
+            Learning.profile.takeIf { it.isNotBlank() }.let { if (it == null) "" else " Things you know about the user (use naturally, don't recite): $it." }
         val context = history.takeLast(6).joinToString("\n") { (if (it.role == "user") "User: " else "VISION: ") + it.text }
         return generate(system, if (context.isBlank()) userText else "$context\nUser: $userText")
     }

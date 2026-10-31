@@ -22,6 +22,7 @@ class VisionApp : Application() {
                 database.memory().insert(com.vision.assistant.data.MemoryItem(category = "creator", content = com.vision.assistant.ai.Identity.MEMORY_FACT))
                 sp.edit().putBoolean("creator_seeded", true).apply()
             }
+            try { com.vision.assistant.ai.Learning.refresh(database.memory()) } catch (_: Throwable) {}
             try { engines.current() } catch (_: Throwable) {}
         }
     }
