@@ -165,12 +165,15 @@ fun MemoryScreen(app: VisionApp) {
     var filter by remember { mutableStateOf("all") }
     var note by remember { mutableStateOf("") }
     var confirmErase by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<MemoryItem?>(null) }
+    var editText by remember { mutableStateOf("") }
+    var editImp by remember { mutableStateOf(3) }
     val shown = items.filter { filter == "all" || it.category == filter }
     val cats = items.map { it.category }.distinct().sorted()
     ScreenFrame("Memory", "What I've learned about you — stored only on this phone") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(note, { note = it }, Modifier.weight(1f), singleLine = true, label = { Text("Tell me something to remember") })
-            Button(enabled = note.isNotBlank(), onClick = { scope.launch { app.database.memory().insert(MemoryItem(category = "note", content = note.trim())); com.vision.assistant.ai.Learning.refresh(app.database.memory()); note = "" } }, modifier = Modifier.padding(top = 8.dp)) { Text("Add") }
+            Button(enabled = note.isNotBlank(), onClick = { scope.launch { com.vision.assistant.memory.MemoryKeeper.save(app.database.memory(), note.trim()); com.vision.assistant.ai.Learning.refresh(app.database.memory()); note = "" } }, modifier = Modifier.padding(top = 8.dp)) { Text("Add") }
         }
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             item { Pill("All ${items.size}", selected = filter == "all") { filter = "all" } }
@@ -185,12 +188,28 @@ fun MemoryScreen(app: VisionApp) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
                             Pill(m.category, VisionColors.Cyan, selected = false)
                             if (m.source == "learned") Pill("learned from you", VisionColors.Mint)
+                            if (m.importance != 3) Pill("importance ${m.importance}", VisionColors.Mint)
+                            if (m.confidence < 1.0) Pill("may be outdated", VisionColors.Cyan, selected = false)
                         }
                     }
+                    TextButton(onClick = { editing = m; editText = m.content; editImp = m.importance }) { Text("Edit") }
                     TextButton(onClick = { scope.launch { app.database.memory().delete(m); com.vision.assistant.ai.Learning.refresh(app.database.memory()) } }) { Text("Forget") }
                 } }
             }
             item {
+                editing?.let { m ->
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { editing = null },
+                        title = { Text("Edit memory") },
+                        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(editText, { editText = it }, Modifier.fillMaxWidth(), label = { Text("What I remember") })
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (i in 1..5) Pill("$i", selected = editImp == i) { editImp = i } }
+                            Text("Importance: higher ranks first when I search my memory. Saving also marks it as current.", fontSize = 11.sp, color = VisionColors.Muted)
+                        } },
+                        confirmButton = { TextButton(enabled = editText.isNotBlank(), onClick = { scope.launch { app.database.memory().update(m.copy(content = editText.trim(), importance = editImp, confidence = 1.0, updatedAt = System.currentTimeMillis())); com.vision.assistant.ai.Learning.refresh(app.database.memory()); editing = null } }) { Text("Save") } },
+                        dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } },
+                    )
+                }
                 if (items.isNotEmpty()) {
                     if (!confirmErase) TextButton(onClick = { confirmErase = true }) { Text("Erase all memory…", color = androidx.compose.ui.graphics.Color(0xFFFF6B6B)) }
                     else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

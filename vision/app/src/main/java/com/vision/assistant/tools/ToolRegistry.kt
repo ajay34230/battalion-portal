@@ -30,13 +30,16 @@ class ToolRegistry(private val app: VisionApp) {
                 else ToolResult.Success(Say.plain("Pending: " + pending.joinToString("; ") { it.title }))
             }
             is Intent.Remember -> {
-                db.memory().insert(MemoryItem(category = "note", content = intent.text))
-                ToolResult.Success(Say("Saved to memory.", "Memory mein save kar diya.", "स्मृति में सहेज दिया।"))
+                when (val d = com.vision.assistant.memory.MemoryKeeper.save(db.memory(), intent.text)) {
+                    is com.vision.assistant.memory.MemoryKeeper.Decision.Duplicate -> ToolResult.Success(Say("I already remember that: \"${d.existing.content}\".", "Ye mujhe pehle se yaad hai: \"${d.existing.content}\".", "यह मुझे पहले से याद है: \"${d.existing.content}\"।"))
+                    is com.vision.assistant.memory.MemoryKeeper.Decision.Conflict -> ToolResult.Success(Say("Saved. Earlier you told me \"${d.existing.content}\"; I now treat the new one as current. You can edit or forget either in Memory.", "Save kar diya. Pehle aapne bataya tha \"${d.existing.content}\"; ab main naye ko sahi maanunga. Memory mein dono edit ya forget kar sakte hain.", "सहेज दिया। पहले आपने बताया था \"${d.existing.content}\"; अब मैं नए को सही मानूँगा। मेमोरी में दोनों बदल या हटा सकते हैं।"))
+                    else -> ToolResult.Success(Say("Saved to memory.", "Memory mein save kar diya.", "स्मृति में सहेज दिया।"))
+                }
             }
             is Intent.Recall -> {
                 val found = db.memory().search(intent.query, 5).ifEmpty {
                     val all = db.memory().list().filter { it.category != "creator" }
-                    com.vision.assistant.memory.SemanticIndex.rank(intent.query, all.map { it.content }, 5).map { all[it.first] }
+                    com.vision.assistant.memory.HybridRank.rank(intent.query, all.map { com.vision.assistant.memory.HybridRank.Doc(it.content, it.importance, it.confidence) }, 5, 0.08).map { all[it.first] }
                 }
                 if (found.isEmpty()) ToolResult.Failure(Say("Nothing saved about \"${intent.query}\".", "\"${intent.query}\" ke baare mein kuch save nahi hai.", "\"${intent.query}\" के बारे में कुछ सहेजा नहीं है।"))
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))

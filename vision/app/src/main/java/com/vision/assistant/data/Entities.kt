@@ -19,6 +19,9 @@ data class MemoryItem(
     val content: String,
     val source: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
+    val importance: Int = 3, // 1 (minor) .. 5 (very important)
+    val confidence: Double = 1.0, // lowered when a newer fact contradicts it
+    val updatedAt: Long = createdAt,
 )
 
 @Entity(tableName = "task_item")
