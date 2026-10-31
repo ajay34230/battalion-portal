@@ -14,7 +14,7 @@ class VoskInput(private val modelDir: File) {
 
     fun prepare() { if (model == null) model = Model(modelDir.absolutePath) }
 
-    fun listen(onText: (String) -> Unit, onError: (String) -> Unit) {
+    fun listen(onText: (String) -> Unit, onError: (String) -> Unit, onActivity: (Float) -> Unit = {}) {
         try {
             prepare()
             val rec = Recognizer(model, 16000f)
@@ -26,7 +26,7 @@ class VoskInput(private val modelDir: File) {
                 if (t.isNotBlank() && !delivered) { delivered = true; stop(); onText(t) }
             }
             s.startListening(object : RecognitionListener {
-                override fun onPartialResult(hypothesis: String?) {}
+                override fun onPartialResult(hypothesis: String?) { if (!hypothesis.isNullOrBlank() && hypothesis.length > 18) onActivity(0.35f + (hypothesis.length % 5) * 0.12f) }
                 override fun onResult(hypothesis: String?) = finish(hypothesis)
                 override fun onFinalResult(hypothesis: String?) = finish(hypothesis)
                 override fun onError(exception: Exception?) { stop(); onError(exception?.message ?: "Offline speech error.") }

@@ -18,10 +18,10 @@ data class AgentReply(
 class Orchestrator(private val app: VisionApp) {
     private val tools = ToolRegistry(app)
 
-    suspend fun handle(userText: String, locked: Boolean = false, settings: com.vision.assistant.privacy.LockSettings = com.vision.assistant.privacy.LockSettings()): AgentReply {
+    suspend fun handle(userText: String, locked: Boolean = false, settings: com.vision.assistant.privacy.LockSettings = com.vision.assistant.privacy.LockSettings(), recordUser: Boolean = true): AgentReply {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
-        db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
+        if (recordUser) db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
         val engine = app.engines.current()
 
         // The trained model understands the request; the rule parser is only the fallback.

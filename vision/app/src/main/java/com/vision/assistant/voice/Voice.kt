@@ -52,10 +52,12 @@ class Speaker(ctx: Context) {
     @Volatile private var ready = false
     var rate = 1.0f
     var onDone: (() -> Unit)? = null
+    private var queued: Pair<String, Lang>? = null
 
     init {
         tts = TextToSpeech(ctx) { status ->
             ready = status == TextToSpeech.SUCCESS
+            if (ready) queued?.let { (t, l) -> queued = null; speak(t, l) }
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {}
                 override fun onDone(utteranceId: String?) { onDone?.invoke() }
@@ -75,7 +77,8 @@ class Speaker(ctx: Context) {
     /** Returns false if no usable voice exists, so the UI can say so instead of staying silent. */
     fun speak(text: String, lang: Lang): Boolean {
         val t = tts ?: return false
-        if (!ready || !hasVoice(lang)) return false
+        if (!ready) { queued = text to lang; return true } // engine still starting: speak as soon as it is ready
+        if (!hasVoice(lang)) return false
         t.language = localeFor(lang)
         t.setSpeechRate(rate)
         t.speak(text, TextToSpeech.QUEUE_FLUSH, null, "vision-${System.nanoTime()}")

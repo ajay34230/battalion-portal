@@ -47,7 +47,7 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
         orb.value = OrbState.THINKING
         scope.launch {
             val locked = !forceUnlocked && isLocked()
-            val r = try { orchestrator.handle(text.trim(), locked, LockPrefs.load(ctx)) } catch (t: Throwable) { AgentReply("Something went wrong: ${t.message}", Lang.EN) }
+            val r = try { orchestrator.handle(text.trim(), locked, LockPrefs.load(ctx), recordUser = !forceUnlocked) } catch (t: Throwable) { AgentReply("Something went wrong: ${t.message}", Lang.EN) }
             deliver(r, text.trim())
         }
     }
@@ -75,7 +75,7 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
                 val v = VoskInput(voskDir); vosk = v
                 val ok = withContext(Dispatchers.IO) { try { v.prepare(); true } catch (t: Throwable) { status.value = "Offline speech model failed: ${t.message}"; false } }
                 if (!ok) { orb.value = OrbState.IDLE; return@launch }
-                v.listen(onText = { send(it) }, onError = { orb.value = OrbState.IDLE; status.value = it })
+                v.listen(onText = { level.value = 0f; send(it) }, onError = { orb.value = OrbState.IDLE; level.value = 0f; status.value = it }, onActivity = { level.value = it })
             }
             return
         }
