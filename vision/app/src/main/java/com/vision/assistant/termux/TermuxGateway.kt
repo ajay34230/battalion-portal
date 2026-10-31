@@ -215,23 +215,23 @@ class TermuxGateway(private val ctx: Context) {
     fun run(v: Validation.Ok): String? = send(v, ids.incrementAndGet())
 
     /** Runs the command and waits (max ~40 s) for its output. */
-    suspend fun execute(v: Validation.Ok): Result<String> {
+    suspend fun execute(v: Validation.Ok, timeoutSeconds: Int = CommandPolicy.TIMEOUT_SECONDS): Result<String> {
         val id = ids.incrementAndGet()
         val d = CompletableDeferred<String>()
         TermuxResults.waiting[id] = d
-        send(v, id)?.let { TermuxResults.waiting.remove(id); return Result.failure(IllegalStateException(it)) }
-        val r = withTimeoutOrNull((CommandPolicy.TIMEOUT_SECONDS + 10) * 1000L) { d.await() }
+        send(v, id, timeoutSeconds)?.let { TermuxResults.waiting.remove(id); return Result.failure(IllegalStateException(it)) }
+        val r = withTimeoutOrNull((timeoutSeconds + 10) * 1000L) { d.await() }
         TermuxResults.waiting.remove(id)
         return if (r == null) Result.failure(IllegalStateException("Termux did not answer. Is allow-external-apps=true set and Termux restarted?")) else Result.success(r)
     }
 
-    private fun send(v: Validation.Ok, id: Int): String? {
+    private fun send(v: Validation.Ok, id: Int, timeoutSeconds: Int = CommandPolicy.TIMEOUT_SECONDS): String? {
         if (!isInstalled()) return "Termux is not installed."
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
         val result = PendingIntent.getBroadcast(ctx, id, Intent(ctx, TermuxResultReceiver::class.java).putExtra("rid", id), flags)
         val i = Intent("com.termux.RUN_COMMAND").setClassName("com.termux", "com.termux.app.RunCommandService")
             .putExtra("com.termux.RUN_COMMAND_PATH", CommandPolicy.PREFIX + "timeout")
-            .putExtra("com.termux.RUN_COMMAND_ARGUMENTS", (listOf(CommandPolicy.TIMEOUT_SECONDS.toString(), CommandPolicy.PREFIX + v.binary) + v.args).toTypedArray())
+            .putExtra("com.termux.RUN_COMMAND_ARGUMENTS", (listOf(timeoutSeconds.toString(), CommandPolicy.PREFIX + v.binary) + v.args).toTypedArray())
             .putExtra("com.termux.RUN_COMMAND_WORKDIR", CommandPolicy.HOME)
             .putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
             .putExtra("com.termux.RUN_COMMAND_PENDING_INTENT", result)

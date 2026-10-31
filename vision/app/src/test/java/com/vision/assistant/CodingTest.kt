@@ -111,3 +111,49 @@ class TermuxRunnerTest {
     }
     @Test fun tooLargeProjectIsRefused() = assertNull(TermuxRunner.script("big", mapOf("x.txt" to "a".repeat(200_000)), "true"))
 }
+
+class DevEnvTest {
+    private fun spec(id: String) = ToolCatalogue.byId(id)!!
+    @Test fun parsesVersions() {
+        assertEquals("3.11.6", VersionUtil.parse("Python 3.11.6")); assertEquals("17.0.9", VersionUtil.parse("openjdk version \"17.0.9\" 2023"))
+        assertTrue(VersionUtil.compare("3.10", "3.9") > 0); assertTrue(VersionUtil.compare("18", "18.0.0") == 0); assertTrue(VersionUtil.compare("2.1", "2.30") < 0)
+    }
+    @Test fun statusesAreDetected() {
+        assertEquals(ToolStatus.INSTALLED_AND_READY, DevInventory.status(spec("python"), "Python 3.12.1", true).status)
+        assertEquals(ToolStatus.INSTALLED_BUT_OUTDATED, DevInventory.status(spec("python"), "Python 3.6.0", true).status)
+        assertEquals(ToolStatus.NOT_INSTALLED, DevInventory.status(spec("git"), "bash: git: command not found", true).status)
+        assertEquals(ToolStatus.PERMISSION_REQUIRED, DevInventory.status(spec("git"), null, false).status)
+        assertEquals(ToolStatus.UNSUPPORTED, DevInventory.status(spec("android-sdk"), "", true).status)
+        assertEquals(ToolStatus.PARTIALLY_INSTALLED, DevInventory.status(spec("git"), "weird output", true).status)
+        val states = mapOf("java" to ToolState("java", ToolStatus.NOT_INSTALLED, "", 0))
+        assertEquals(ToolStatus.INSTALLATION_REQUIRED, DevInventory.status(spec("gradle"), "gradle: not found", true, states).status)
+    }
+    @Test fun probeOutputRoundTrip() {
+        val m = DevInventory.parseProbe("python=Python 3.12.1\ngit=bash: git: command not found\nnoise line\n")
+        assertEquals("Python 3.12.1", m["python"]); assertTrue(m["git"]!!.contains("not found")); assertEquals(2, m.size)
+        val js = DevInventory.toJson(listOf(ToolState("python", ToolStatus.INSTALLED_AND_READY, "3.12.1", 5)))
+        assertEquals("3.12.1", DevInventory.fromJson(js)["python"]!!.version)
+    }
+    @Test fun requirementsDependOnTheProject() {
+        assertTrue(RequirementDetector.detect("make a calculator website", listOf("index.html", "style.css", "app.js")).isEmpty())
+        assertTrue(RequirementDetector.detect("report from csv", listOf("report.py")).containsAll(listOf("python", "pip")))
+        assertTrue(RequirementDetector.detect("build an android app", emptyList()).containsAll(listOf("java", "gradle", "android-sdk")))
+        assertTrue("express" in "express" && RequirementDetector.detect("express server", emptyList()).contains("node"))
+    }
+    @Test fun installSummaryNeverStartsAnythingAndIsComplete() {
+        val s = InstallSummary.build(spec("git"), "needed for history", 20000)
+        for (k in listOf("Resource", "Source", "License", "Cost", "storage", "Permissions", "Method", "Security", "Why now")) assertTrue(k, s.contains(k))
+        assertEquals("pkg install -y git", InstallSummary.command(spec("git")))
+        assertTrue(InstallSummary.build(spec("android-sdk"), "x", 1).contains("cannot be installed"))
+        assertTrue(InstallSummary.build(spec("python"), "x", 500).contains("too low"))
+    }
+}
+
+class ProbeScriptTest {
+    @Test fun probeScriptHasNoArithmeticExpansion() {
+        val s = DevInventory.probeScript()
+        assertFalse(s.contains("\$(("))
+        assertTrue(s.lines().all { it.startsWith("echo \"") })
+        assertEquals(ToolCatalogue.all.size, s.lines().size)
+    }
+}

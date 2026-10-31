@@ -97,18 +97,27 @@ fun CodingScreen(app: VisionApp) {
     val studio = remember { CodeStudio(app, ctx) }
     var project by remember { mutableStateOf<String?>(null) }
     var refresh by remember { mutableStateOf(0) }
+    var top by remember { mutableStateOf("Projects") }
     val name = project
-    if (name == null) ProjectList(studio, refresh, onOpen = { project = it }, onChanged = { refresh++ })
-    else ProjectView(app, studio, name, onClose = { project = null; refresh++ })
+    if (name != null) ProjectView(app, studio, name, onClose = { project = null; refresh++ })
+    else Column(Modifier.fillMaxSize()) {
+        androidx.compose.foundation.layout.Row(Modifier.padding(start = 16.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.foundation.layout.Spacer(Modifier.height(0.dp))
+        }
+        if (top == "Projects") Box(Modifier.weight(1f)) { ProjectList(studio, refresh, onOpen = { project = it }, onChanged = { refresh++ }, switchTools = { top = "Tools" }) }
+        else ScreenFrame("Dev tools", "What's installed, what's missing, and safe installs", action = { TextButton(onClick = { top = "Projects" }) { Text("Projects") } }) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { DevToolsPanel(app, studio) }
+        }
+    }
 }
 
 @Composable
-private fun ProjectList(studio: CodeStudio, refresh: Int, onOpen: (String) -> Unit, onChanged: () -> Unit) {
+private fun ProjectList(studio: CodeStudio, refresh: Int, onOpen: (String) -> Unit, onChanged: () -> Unit, switchTools: () -> Unit) {
     var newName by remember { mutableStateOf("") }
     var template by remember { mutableStateOf("calculator") }
     var msg by remember { mutableStateOf("") }
     val projects = remember(refresh) { studio.store.list() }
-    ScreenFrame("Coding Studio", "Build, run and fix small programs — offline") {
+    ScreenFrame("Coding Studio", "Build, run and fix small programs — offline", action = { TextButton(onClick = switchTools) { Text("Dev tools") } }) {
         InfoCard {
             SectionLabel("New project")
             OutlinedTextField(newName, { newName = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Project name") })
@@ -163,7 +172,7 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
 
     ScreenFrame(name, "${files.size} files" + if (dirty) " · unsaved" else "", action = { TextButton(onClick = { if (dirty) save(); onClose() }) { Text("Projects") } }) {
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(listOf("Files", "Editor", "Preview", "Run", "Ask VISION", "History")) { t -> Pill(t, selected = tab == t) { tab = t } }
+            items(listOf("Files", "Editor", "Preview", "Run", "Ask VISION", "Tools", "History")) { t -> Pill(t, selected = tab == t) { tab = t } }
         }
         if (status.isNotBlank()) Text(status, fontSize = 12.sp, color = VisionColors.Mint)
         when (tab) {
@@ -263,6 +272,7 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                 if (busy) Text("Working… on-device models can take a minute.", color = VisionColors.Cyan)
                 if (output.isNotBlank()) Text(output, fontSize = 13.sp)
             }
+            "Tools" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { DevToolsPanel(app, studio, request, files) }
             else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { if (dirty) save(); store.snapshot(name, "Manual snapshot"); reload(); status = "Snapshot saved." }) { Text("Save snapshot") }
