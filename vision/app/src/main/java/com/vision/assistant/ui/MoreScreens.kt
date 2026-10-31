@@ -98,6 +98,8 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         Text("Search", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
         Text("Optional SearXNG server (must have JSON output enabled). Empty = Wikipedia.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
+        var phoneVoice by remember { mutableStateOf(Prefs.phoneVoice(ctx)) }
+        ToggleRow("Use my phone's built-in voice", "Talk using the speech recogniser and voice already on your phone (Google/vivo). Turn off to use VISION's downloaded offline model instead.", phoneVoice) { phoneVoice = it; Prefs.setPhoneVoice(ctx, it) }
         Text("Optional Brave Search API key (free at brave.com/search/api) for better web results. Without any key VISION uses DuckDuckGo + Wikipedia.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(brave, { brave = it }, Modifier.fillMaxWidth(), label = { Text("Brave API key") }, singleLine = true)
         Button(onClick = { Prefs.setSearxngUrl(ctx, searx); Prefs.setBraveKey(ctx, brave); msg = "Saved." }) { Text("Save") }

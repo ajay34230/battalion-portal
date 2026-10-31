@@ -72,7 +72,7 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
     fun listen() {
         speaker.stop(); stopListening()
         orb.value = OrbState.LISTENING; status.value = ""; heard.value = ""
-        val voskDir = mgr.voskDir(if (hindiMic) "vosk-small-hi" else "vosk-small-en-us")
+        val voskDir = if (com.vision.assistant.research.Prefs.phoneVoice(ctx)) null else mgr.voskDir(if (hindiMic) "vosk-small-hi" else "vosk-small-en-us")
         if (voskDir != null) {
             scope.launch {
                 vosk?.release()
