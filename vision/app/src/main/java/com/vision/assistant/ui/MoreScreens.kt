@@ -82,6 +82,12 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
                 fun pick(id: String) { chosen = id; app.engines.setPreferred(id); app.appScope.launch { try { app.engines.current() } catch (_: Throwable) {} } }
                 androidx.compose.material3.FilterChip(selected = chosen == "auto", onClick = { pick("auto") }, label = { Text("Automatic (strongest that fits)") })
                 for (m in installedLlms) androidx.compose.material3.FilterChip(selected = chosen == m.id, onClick = { pick(m.id) }, label = { Text(m.title + (if (m.experimental) "  (experimental)" else "") + "  ·  " + app.engines.status(m).label) })
+                Text("When set to Automatic, VISION picks per message:", fontSize = 11.sp, color = VisionColors.Muted)
+                var speed by remember { mutableStateOf(app.engines.speedPref()) }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (sp in com.vision.assistant.ai.SpeedPref.values()) androidx.compose.material3.FilterChip(selected = speed == sp, onClick = { speed = sp; app.engines.setSpeedPref(sp) }, label = { Text(sp.label) })
+                }
+                Text("Prefer speed uses a small model for short, simple messages. Prefer quality always uses the strongest. Balanced keeps the loaded model unless another is clearly better for code or Hindi.", fontSize = 11.sp, color = VisionColors.Muted)
                 Text("Switching reloads the model; the first answer after a switch is slower. Smaller models answer faster.", fontSize = 11.sp, color = VisionColors.Muted)
             }
         }

@@ -43,7 +43,7 @@ class Orchestrator(private val app: VisionApp) {
                 return joined
             }
         }
-        val engine = app.engines.current()
+        val engine = app.engines.current(userText)
         val learned = if (recordUser) try { Learning.learn(db.memory(), userText) } catch (_: Throwable) { emptyList() } else emptyList()
 
         // The trained model understands the request; the rule parser is only the fallback.

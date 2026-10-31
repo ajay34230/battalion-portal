@@ -28,7 +28,11 @@ class EngineProvider(private val app: VisionApp) {
     /** Lifecycle state of one model on this phone (see [ModelStatus]). */
     fun status(e: ResourceEntry): ModelStatus = ModelLifecycle.status(Downloads.manager(app).state(e), e.id in badModels(), currentId == e.id && current is LiteRtLmEngine, e.id in answered)
 
-    suspend fun current(): LlmEngine = select(needImage = false)!!
+    /** [text] only helps pick the best installed model (code, Hindi, short and simple); it is never stored. */
+    suspend fun current(text: String = ""): LlmEngine {
+        task = TaskClassifier.classify(text); simple = TaskClassifier.isSimple(text)
+        return select(needImage = false)!!
+    }
 
     /** An engine that can see images, or null if no multimodal model is installed. */
     suspend fun vision(): LlmEngine? = select(needImage = true)
@@ -43,15 +47,23 @@ class EngineProvider(private val app: VisionApp) {
     fun preferred(): String = prefs.getString("preferred", "auto") ?: "auto"
     fun setPreferred(id: String) { prefs.edit().putString("preferred", id).apply(); invalidate() }
 
+    fun speedPref(): SpeedPref = SpeedPref.values().firstOrNull { it.name == prefs.getString("speed", "BALANCED") } ?: SpeedPref.BALANCED
+    fun setSpeedPref(s: SpeedPref) { prefs.edit().putString("speed", s.name).apply() }
+    @Volatile private var task = TaskKind.CHAT
+    @Volatile private var simple = false
+    private var reason = ""
+
     private fun installed(needImage: Boolean): ResourceEntry? {
         val mgr = Downloads.manager(app)
         val bad = badModels()
         val ok = ResourceManifest.entries.filter { it.kind == ResourceKind.LLM && it.id !in bad && mgr.compatible(it) && mgr.state(it) == InstallState.INSTALLED }
-        // Experimental (oversized) models are used only when nothing safe is installed or when the user installed them on purpose and they loaded before.
-        val want = preferred()
-        if (!needImage && want != "auto") ok.firstOrNull { it.id == want }?.let { return it }
-        return if (needImage) ok.filter { it.multimodal }.maxByOrNull { it.sizeBytes }
-        else (ok.filter { !it.multimodal }.maxByOrNull { it.sizeBytes } ?: ok.maxByOrNull { it.sizeBytes })
+        // Experimental (oversized) models are used only when nothing safe is installed or when the owner picked one on purpose.
+        if (needImage) return ok.filter { it.multimodal }.maxByOrNull { it.sizeBytes }
+        val text = ok.filter { !it.multimodal }.ifEmpty { ok }
+        val cands = text.map { ModelRouter.Candidate(it.id, it.sizeMb, it.experimental, it.languages, com.vision.assistant.core.ModelCatalog.categories(it.title)) }
+        val c = ModelRouter.choose(task, cands, preferred(), currentId, speedPref(), simple) ?: return null
+        reason = c.reason
+        return text.firstOrNull { it.id == c.id }
     }
 
     private suspend fun select(needImage: Boolean): LlmEngine? {
@@ -71,7 +83,7 @@ class EngineProvider(private val app: VisionApp) {
             }
             if (currentId == entry.id && current != null) return current!!
             (current as? LiteRtLmEngine)?.close()
-            label.value = "Loading ${entry.title}…"
+            label.value = "Loading ${entry.title}… ($reason)"
             val useGpu = com.vision.assistant.research.Prefs.useGpu(app) && entry.id.startsWith("gemma") && entry.id !in (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet())
             prefs.edit().putString("loading", entry.id).also { if (useGpu) it.putString("loading_gpu", entry.id) }.commit()
             try {
