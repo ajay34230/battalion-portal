@@ -41,3 +41,17 @@ class IntentParserTest {
     @Test fun batteryQuery() = assertEquals(Intent.AskBattery, IntentParser.parse("what's my battery"))
     @Test fun unknownIsChat() = assertTrue(IntentParser.parse("tell me a joke") is Intent.Chat)
 }
+
+class ResearchModesTest {
+    @org.junit.Test fun deepAndAcademicModes() {
+        val d = IntentParser.parse("deep research on solar panels") as Intent.Search
+        org.junit.Assert.assertEquals("deep", d.mode); org.junit.Assert.assertEquals("solar panels", d.query)
+        org.junit.Assert.assertEquals("academic", (IntentParser.parse("academic research on graph neural networks") as Intent.Search).mode)
+        org.junit.Assert.assertEquals("quick", (IntentParser.parse("search weather today") as Intent.Search).mode)
+    }
+    @org.junit.Test fun arxivParsing() {
+        val xml = "<feed><entry><id>http://arxiv.org/abs/1234.5678v1</id><title>A Paper</title><summary>About things.</summary></entry></feed>"
+        val r = com.vision.assistant.research.ArxivSearch.parse(xml)
+        org.junit.Assert.assertEquals("https://arxiv.org/abs/1234.5678v1", r[0].url); org.junit.Assert.assertEquals("A Paper", r[0].title)
+    }
+}

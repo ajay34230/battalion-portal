@@ -32,7 +32,7 @@ object Prefs {
 
 /** Search -> fetch (robots.txt respected) -> extract -> summary (language model if installed, else extractive) with numbered sources. */
 class ResearchTool(private val app: VisionApp) {
-    suspend fun run(query: String): ToolResult = withContext(Dispatchers.IO) {
+    suspend fun run(query: String, mode: String = "quick"): ToolResult = withContext(Dispatchers.IO) {
         if (!NetworkMonitor.isOnline(app)) {
             app.database.memory().insert(MemoryItem(category = "pending_research", content = query))
             return@withContext ToolResult.Failure(
@@ -54,24 +54,25 @@ class ResearchTool(private val app: VisionApp) {
                 add(DuckDuckGoSearch())
             }
             for (p in web) {
-                val r = try { p.search(query, 6) } catch (_: Exception) { emptyList() }
+                val r = try { p.search(query, if (mode == "deep") 10 else 6) } catch (_: Exception) { emptyList() }
                 if (r.isNotEmpty()) { r.forEach { hits.putIfAbsent(it.url, it) }; used += p.name; break }
             }
             val wiki = WikipediaSearch(if (lang == Lang.HI) "hi" else "en")
+            if (mode == "academic") try { ArxivSearch().search(query, 5).forEach { hits.putIfAbsent(it.url, it) }; used += "arXiv" } catch (_: Exception) {}
             try { wiki.search(query, 2).forEach { hits.putIfAbsent(it.url, it) }; used += wiki.name } catch (_: Exception) {}
             if (hits.isEmpty()) return@withContext ToolResult.Failure(Say("No results for \"$query\".", "\"$query\" ke liye kuch nahi mila.", "\"$query\" के लिए कुछ नहीं मिला।"))
 
             // Read up to 6 pages in parallel (robots.txt respected).
             val pages = coroutineScope {
-                hits.values.take(6).map { h -> async { h to fetch(h.url) } }.awaitAll()
+                hits.values.take(if (mode == "deep") 10 else 6).map { h -> async { h to fetch(h.url) } }.awaitAll()
             }
             val sources = pages.mapNotNull { (h, page) ->
-                val body = Untrusted.sanitize(page?.text.orEmpty()).take(1800).ifBlank { h.snippet }
+                val body = Untrusted.sanitize(page?.text.orEmpty()).take(if (mode == "deep") 2600 else 1800).ifBlank { h.snippet }
                 if (body.isBlank()) null else Triple(h, body, page?.title?.ifBlank { null } ?: h.title)
             }
             if (sources.isEmpty()) return@withContext ToolResult.Failure(Say("I found results but couldn't read any page (blocked or empty)."))
 
-            val material = sources.mapIndexed { i, (h, body, title) -> "[${i + 1}] $title (${URL(h.url).host})\n$body" }.joinToString("\n\n").take(7000)
+            val material = sources.mapIndexed { i, (h, body, title) -> "[${i + 1}] $title (${URL(h.url).host})\n$body" }.joinToString("\n\n").take(if (mode == "deep") 12000 else 7000)
             val engine = app.engines.current()
             val summary = try { engine.summarize(query, material, lang) } catch (_: Throwable) { null }
                 ?: sources.take(3).joinToString("\n") { (_, body, title) -> "• $title: ${TextExtractor.leadSentences(body, 3)}" }

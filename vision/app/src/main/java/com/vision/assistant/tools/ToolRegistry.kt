@@ -38,7 +38,7 @@ class ToolRegistry(private val app: VisionApp) {
                 if (found.isEmpty()) ToolResult.Failure(Say("Nothing saved about \"${intent.query}\".", "\"${intent.query}\" ke baare mein kuch save nahi hai.", "\"${intent.query}\" के बारे में कुछ सहेजा नहीं है।"))
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))
             }
-            is Intent.Search -> research.run(intent.query)
+            is Intent.Search -> research.run(intent.query, intent.mode)
             is Intent.Termux -> termux(intent.line)
             is Intent.WhatsAppDraft -> device.whatsappDraft(intent.text)
             is Intent.ReadNotifications -> notifications(intent.whatsappOnly)

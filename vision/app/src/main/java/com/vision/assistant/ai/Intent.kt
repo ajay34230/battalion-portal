@@ -10,7 +10,8 @@ sealed interface Intent {
     /** Birthday, anniversary or monthly bill: month is null for monthly bills. */
     data class SetEvent(val kind: String, val title: String, val month: Int?, val day: Int, val monthly: Boolean, val lang: String) : Intent
     data class Call(val contact: String) : Intent
-    data class Search(val query: String) : Intent
+    /** [mode]: quick | deep | academic */
+    data class Search(val query: String, val mode: String = "quick") : Intent
     data class Remember(val text: String) : Intent
     data class Recall(val query: String) : Intent
     data class WhatsAppDraft(val text: String) : Intent
@@ -84,6 +85,8 @@ object IntentParser {
         Regex("^(?:open|launch|start|kholo|khol do)\\s+(.+)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
         Regex("^(.+?)\\s+(?:kholo|khol do|open karo|khol|chalu karo|खोलो|खोल दो)$").find(l)?.let { return Intent.OpenApp(clean(it.groupValues[1])) }
 
+        Regex("^(?:deep|detailed|thorough)\\s+(?:research|search)\\s+(?:on|about|for)?\\s*(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim(), "deep") }
+        Regex("^(?:academic|scientific|paper|papers)\\s+(?:research|search)?\\s*(?:on|about|for)?\\s*(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim(), "academic") }
         Regex("^(?:search|research|find|look up|summari[sz]e|dhundo|khojo|dhoondo)\\s+(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
         Regex("^(?:mujhe\\s+)?batao\\s+(?:ki\\s+)?(.+)$").find(l)?.let { return Intent.Search(it.groupValues[1].trim()) }
 

@@ -190,3 +190,14 @@ class SearchAndDashboardTest {
         assertTrue(Templates.calculator.files["test.js"]!!.contains("Error")); assertTrue(Templates.dashboard.files["test.js"]!!.contains("-5"))
     }
 }
+
+class BackupTest {
+    @Test fun roundTripKeepsMemoryAndTasks() {
+        val json = com.vision.assistant.backup.Backup.toJson(
+            listOf(com.vision.assistant.data.MemoryItem(category = "fact", content = "User's name is Ajay", source = "learned")),
+            listOf(com.vision.assistant.data.TaskItem(title = "Rahul", dueAt = 1000L, repeat = "yearly:03-14", kind = "birthday", leadDays = "1")))
+        val (m, t) = com.vision.assistant.backup.Backup.parse(json)!!
+        assertEquals("User's name is Ajay", m[0].content); assertEquals("yearly:03-14", t[0].repeat); assertEquals("birthday", t[0].kind); assertEquals(1000L, t[0].dueAt)
+    }
+    @Test fun rejectsForeignJson() = assertNull(com.vision.assistant.backup.Backup.parse("{\"app\":\"other\"}"))
+}

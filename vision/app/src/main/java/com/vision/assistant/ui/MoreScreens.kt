@@ -120,6 +120,17 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
             OutlinedButton(onClick = { scope.launch { app.database.chat().clear(); msg = "Chat erased." } }) { Text("Erase chat") }
             OutlinedButton(onClick = { scope.launch { app.database.notifications().clear(); msg = "Notification history erased." } }) { Text("Erase notifications") }
         }
+        OutlinedButton(onClick = {
+            scope.launch {
+                try {
+                    val json = com.vision.assistant.backup.Backup.toJson(app.database.memory().list(), app.database.tasks().pending() + emptyList())
+                    val f = java.io.File(ctx.cacheDir, "vision-backup.json").also { it.writeText(json) }
+                    val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
+                    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Export my VISION data").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    msg = "Backup ready: your memory and open reminders as a JSON file (no passwords or keys)."
+                } catch (t: Throwable) { msg = "Export failed: ${t.message}" }
+            }
+        }) { Text("Export my data (JSON)") }
         OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }) { Text("Notification access settings") }
         if (msg.isNotBlank()) Text(msg)
         Text("Action log (latest first)", style = MaterialTheme.typography.titleMedium)

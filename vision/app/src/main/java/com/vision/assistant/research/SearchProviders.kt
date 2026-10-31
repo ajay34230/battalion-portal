@@ -116,3 +116,20 @@ class DuckDuckGoSearch : SearchProvider {
         }
     }
 }
+
+/** arXiv (official Atom API, keyless) for academic questions. */
+class ArxivSearch : SearchProvider {
+    override val name = "arXiv"
+    override suspend fun search(query: String, max: Int): List<SearchHit> =
+        parse(httpGet("https://export.arxiv.org/api/query?search_query=all:${URLEncoder.encode(query, "UTF-8")}&max_results=$max&sortBy=relevance", "application/atom+xml"), max)
+
+    companion object {
+        fun parse(xml: String, max: Int = 5): List<SearchHit> {
+            val doc = org.jsoup.Jsoup.parse(xml, "", org.jsoup.parser.Parser.xmlParser())
+            return doc.select("entry").take(max).mapNotNull { e ->
+                val title = e.selectFirst("title")?.text()?.trim().orEmpty(); val id = e.selectFirst("id")?.text()?.trim().orEmpty()
+                if (title.isBlank() || !id.startsWith("http")) null else SearchHit(title.take(200), id.replace("http://", "https://"), e.selectFirst("summary")?.text()?.trim().orEmpty().take(600))
+            }
+        }
+    }
+}
