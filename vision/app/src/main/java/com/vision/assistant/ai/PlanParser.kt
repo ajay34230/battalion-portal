@@ -70,3 +70,34 @@ Examples:
         return Plan(intent, s("reply").takeIf { it.isNotEmpty() })
     }
 }
+
+/** Pulls the chat answer out of the planner's JSON while it is still being written, so streamed words can be shown at once. */
+object PlanStream {
+    private val chatIntent = Regex("\"intent\"\\s*:\\s*\"chat\"")
+    private val replyKey = Regex("\"reply\"\\s*:\\s*\"")
+
+    /** The decoded answer so far, or null when this is not a chat answer yet (an action plan is never shown as text). */
+    fun partialReply(acc: String): String? {
+        if (!chatIntent.containsMatchIn(acc)) return null
+        val m = replyKey.find(acc) ?: return null
+        val sb = StringBuilder(); var i = m.range.last + 1
+        while (i < acc.length) {
+            val c = acc[i]
+            when {
+                c == '"' -> break
+                c == '\\' -> {
+                    if (i + 1 >= acc.length) break
+                    when (val n = acc[i + 1]) {
+                        'n' -> sb.append('\n'); 't' -> sb.append('\t'); '"' -> sb.append('"'); '\\' -> sb.append('\\'); '/' -> sb.append('/')
+                        'u' -> { if (i + 5 < acc.length + 0 && i + 6 <= acc.length) { sb.append(acc.substring(i + 2, i + 6).toIntOrNull(16)?.toChar() ?: '?'); i += 4 } else return sb.toString().ifEmpty { null } }
+                        else -> sb.append(n)
+                    }
+                    i += 2; continue
+                }
+                else -> sb.append(c)
+            }
+            i++
+        }
+        return sb.toString().ifEmpty { null }
+    }
+}

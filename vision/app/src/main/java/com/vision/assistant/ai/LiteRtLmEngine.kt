@@ -29,14 +29,14 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
     var onStall: (() -> Unit)? = null
     var onAnswered: (() -> Unit)? = null
 
-    private suspend fun generate(system: String, prompt: String, tag: String = "generate"): String = lock.withLock {
+    private suspend fun generate(system: String, prompt: String, tag: String = "generate", onText: ((String) -> Unit)? = null): String = lock.withLock {
         val t0 = System.currentTimeMillis()
         // The native call cannot be interrupted, so it runs on its own thread and we stop WAITING after a limit; a stuck model can never freeze the app.
         val work = kotlinx.coroutines.CoroutineScope(Dispatchers.IO).async {
-            // "/no_think" turns off Qwen3's long reasoning so replies stay fast.
-            LlmText.clean(bridge.generate(system, if (noThink) "$prompt /no_think" else prompt))
+            // Thinking is switched off for Qwen models through the library setting, so replies stay fast.
+            LlmText.clean(if (onText != null) bridge.generateStream(system, prompt, !noThink, onText) else bridge.generate(system, prompt, !noThink))
         }
-        kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) { work.await() }?.also { if (it.isNotBlank()) onAnswered?.invoke(); com.vision.assistant.diag.DiagLog.log(tag, "${it.length} chars", System.currentTimeMillis() - t0, name, backend) } ?: run { com.vision.assistant.diag.DiagLog.log("stall", "no answer within ${TIMEOUT_MS / 1000}s", System.currentTimeMillis() - t0, name, backend); onStall?.invoke(); throw java.io.IOException("The model did not answer within ${TIMEOUT_MS / 1000} seconds, so I reset it. Try again (it will use the CPU now).") }
+        try { kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) { work.await() } } catch (ce: kotlinx.coroutines.CancellationException) { bridge.cancel(); throw ce }?.also { if (it.isNotBlank()) onAnswered?.invoke(); com.vision.assistant.diag.DiagLog.log(tag, "${it.length} chars", System.currentTimeMillis() - t0, name, backend) } ?: run { bridge.cancel(); com.vision.assistant.diag.DiagLog.log("stall", "no answer within ${TIMEOUT_MS / 1000}s", System.currentTimeMillis() - t0, name, backend); onStall?.invoke(); throw java.io.IOException("The model did not answer within ${TIMEOUT_MS / 1000} seconds, so I reset it. Try again (it will use the CPU now).") }
     }
 
     companion object { const val TIMEOUT_MS = 120_000L }
@@ -62,8 +62,8 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
 
     override suspend fun complete(system: String, prompt: String): String? = try { generate(system, prompt).takeIf { it.isNotBlank() } } catch (_: Throwable) { null }
 
-    override suspend fun plan(userText: String): Plan? =
-        PlanParser.parse(generate(PlanParser.SYSTEM, "\"$userText\" ->", "plan"))
+    override suspend fun plan(userText: String, onPartial: ((String) -> Unit)?): Plan? =
+        PlanParser.parse(generate(PlanParser.SYSTEM, "\"$userText\" ->", "plan", onPartial?.let { cb -> { acc: String -> PlanStream.partialReply(acc)?.let(cb) } }))
 
     override suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String {
         val langName = when (lang) { Lang.HI -> "Hindi (Devanagari)"; Lang.HINGLISH -> "Hinglish (Hindi in Latin letters)"; Lang.EN -> "English" }

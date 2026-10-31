@@ -8,7 +8,8 @@ interface LlmEngine {
     val isNeuralModelLoaded: Boolean
     suspend fun reply(history: List<ChatTurn>, userText: String, lang: Lang): String
     /** Neural engines understand the request themselves; the rule-based engine returns null. */
-    suspend fun plan(userText: String): Plan? = null
+    /** [onPartial] receives the answer text as it is written (only for plain chat answers), so the screen can show words immediately. */
+    suspend fun plan(userText: String, onPartial: ((String) -> Unit)? = null): Plan? = null
     /** Summarises untrusted source material for a question. Null = engine can't (caller uses an extractive summary). */
     /** Looks at a photo with a multimodal model. Null = this engine can't see images. */
     suspend fun describeImage(imagePath: String, question: String, lang: Lang): String? = null

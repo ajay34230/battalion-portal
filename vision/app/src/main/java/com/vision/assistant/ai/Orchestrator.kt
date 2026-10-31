@@ -21,7 +21,7 @@ data class AgentReply(
 class Orchestrator(private val app: VisionApp) {
     private val tools = ToolRegistry(app)
 
-    suspend fun handle(userText: String, locked: Boolean = false, settings: com.vision.assistant.privacy.LockSettings = com.vision.assistant.privacy.LockSettings(), recordUser: Boolean = true): AgentReply {
+    suspend fun handle(userText: String, locked: Boolean = false, settings: com.vision.assistant.privacy.LockSettings = com.vision.assistant.privacy.LockSettings(), recordUser: Boolean = true, onPartial: ((String) -> Unit)? = null): AgentReply {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         if (recordUser) db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
@@ -56,7 +56,7 @@ class Orchestrator(private val app: VisionApp) {
         val ruleIntent = IntentParser.parse(userText)
         // Clear commands the rule parser recognises run instantly (no model call = fast). Everything else goes to the model, which understands any wording or language in ONE call.
         val fast = isFastCommand(ruleIntent)
-        val plan = if (fast) null else try { engine.plan(userText) } catch (_: Throwable) { null }
+        val plan = if (fast) null else try { engine.plan(userText, onPartial) } catch (_: Throwable) { null }
         val intent = if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
 
         val reply = if (locked && !LockPolicy.allowedWhenLocked(intent, settings)) {

@@ -6,6 +6,9 @@ import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.Message
+import com.google.ai.edge.litertlm.MessageCallback
+import com.google.ai.edge.litertlm.ThinkingConfig
 
 /** Thin, dependency-free facade over Google LiteRT-LM (public API uses only Kotlin/JDK types). Blocking calls. */
 class LiteRtBridge {
@@ -56,11 +59,46 @@ class LiteRtBridge {
     }
     var speculative = false; private set
 
-    fun generate(system: String, prompt: String): String {
+    /** [thinking] false turns off the model's long hidden reasoning (the supported way, instead of a text hint in the prompt). */
+    fun generate(system: String, prompt: String, thinking: Boolean = true): String {
         val e = engine ?: error("Model not loaded")
         return e.createConversation(ConversationConfig(systemInstruction = Contents.of(system))).use { c ->
-            c.sendMessage(prompt).toString()
+            c.sendMessage(prompt, thinkingConfig = ThinkingConfig(thinking)).toString()
         }
+    }
+
+    @Volatile private var running: com.google.ai.edge.litertlm.Conversation? = null
+
+    /** Like [generate] but reports the text so far through [onText] as soon as the first words exist. Returns the full text. Blocks until done. */
+    fun generateStream(system: String, prompt: String, thinking: Boolean, onText: (String) -> Unit): String {
+        val e = engine ?: error("Model not loaded")
+        val conv = e.createConversation(ConversationConfig(systemInstruction = Contents.of(system)))
+        running = conv
+        val done = java.util.concurrent.CountDownLatch(1)
+        var failure: Throwable? = null
+        val sb = StringBuilder()
+        val cb = object : MessageCallback {
+            override fun onMessage(message: Message) {
+                val t = message.toString()
+                // Some versions send only the new piece, others the whole text so far: accept both.
+                if (sb.isNotEmpty() && t.length > sb.length && t.startsWith(sb)) { sb.setLength(0); sb.append(t) } else sb.append(t)
+                try { onText(sb.toString()) } catch (_: Throwable) { }
+            }
+            override fun onDone() { done.countDown() }
+            override fun onError(throwable: Throwable) { failure = throwable; done.countDown() }
+        }
+        try {
+            conv.sendMessageAsync(prompt, cb, thinkingConfig = ThinkingConfig(thinking))
+            done.await()
+        } finally { running = null; try { conv.close() } catch (_: Throwable) { } }
+        failure?.let { throw it }
+        return sb.toString()
+    }
+
+    /** Asks the running generation to stop (best effort: the library method is looked up by name so an older version just ignores it). */
+    fun cancel() {
+        val c = running ?: return
+        try { c.javaClass.getMethod("cancelProcess").invoke(c) } catch (_: Throwable) { }
     }
 
     /** Needs a multimodal model loaded with vision = true. */
