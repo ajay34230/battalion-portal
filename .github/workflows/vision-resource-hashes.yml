@@ -49,7 +49,7 @@ jobs:
               try: op.open(req)
               except urllib.error.HTTPError as e:
                 h = e.headers; live = (h.get("X-Linked-ETag") or h.get("ETag") or "").strip('"'); lsize = h.get("X-Linked-Size") or h.get("Content-Length")
-                print(f"::notice title=MODELCHECK::{fn} http={e.code} manifest_sha={sha[:12]} live_sha={live[:12]} match={live==sha} manifest_size={size} live_size={lsize} size_match={str(size)==str(lsize)}")
+                print(f"::notice title=MODELCHECK::{fn} http={e.code} manifest_sha={sha[:12]} live_sha={live} match={live==sha} manifest_size={size} live_size={lsize} size_match={str(size)==str(lsize)}")
             except Exception as ex:
               print(f"::notice title=MODELCHECK::{fn} ERROR {ex}")
           print(f'::notice title=MODELCHECK::entries_found={found}')
