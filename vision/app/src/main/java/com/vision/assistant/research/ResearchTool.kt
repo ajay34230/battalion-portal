@@ -23,7 +23,7 @@ object Prefs {
     fun phoneVoice(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("phone_voice", true)
     fun setPhoneVoice(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("phone_voice", v).apply()
     fun useGpu(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("use_gpu", true)
-    fun setUseGpu(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("use_gpu", v).apply()
+    fun setUseGpu(ctx: Context, v: Boolean) { ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("use_gpu", v).apply(); if (v) ctx.getSharedPreferences("vision_models", Context.MODE_PRIVATE).edit().remove("gpu_bad").apply() /* re-try GPU after a past crash */ }
     fun voiceOnly(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("voice_only", true)
     fun setVoiceOnly(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_only", v).apply()
     fun wakeWord(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("wake_word", false)
