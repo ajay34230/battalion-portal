@@ -54,6 +54,9 @@ fun VisionNav(app: VisionApp) {
     val nav = rememberNavController()
     val back = { nav.popBackStack(); Unit }
     var pendingSay by remember { mutableStateOf<String?>(null) }
+    val appCtx = androidx.compose.ui.platform.LocalContext.current
+    var askPerms by remember { mutableStateOf(PermissionCenter.needsAsk(appCtx)) }
+    if (askPerms) { Box(Modifier.statusBarsPadding()) { PermissionCenterScreen(startup = true) { askPerms = false } }; return }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: Routes.HOME
     val tabRoute = if (route in secondary) Routes.MORE else route
@@ -91,7 +94,7 @@ fun VisionNav(app: VisionApp) {
                 composable(Routes.VOICE) { VoiceSetupScreen(app, { go(it) }) }
                 composable(Routes.MODELS) { Box(Modifier.statusBarsPadding()) { ModelsScreen(app, back) } }
                 composable(Routes.DEVICE) { Box(Modifier.statusBarsPadding()) { DeviceScreen(app.deviceProfile, back) } }
-                composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionsScreen(back) } }
+                composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionCenterScreen(startup = false) { back() } } }
                 composable(Routes.SETTINGS) { SettingsScreen(app, back) }
                 composable(Routes.PRIVACY) { Box(Modifier.statusBarsPadding()) { PrivacyScreen(app, back) } }
                 composable(Routes.TERMUX) { TermuxScreen(app, back) }
