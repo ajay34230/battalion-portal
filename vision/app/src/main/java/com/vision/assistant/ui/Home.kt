@@ -63,6 +63,7 @@ fun HomeScreen(app: VisionApp, go: (String) -> Unit, say: (String) -> Unit) {
                 Text(engineLabel, fontSize = 11.sp, color = VisionColors.Muted, maxLines = 1)
             }
             Spacer(Modifier.weight(1f))
+            ConnectivityChip()
             GearButton()
         }
         Spacer(Modifier.height(14.dp))
@@ -118,6 +119,7 @@ fun MoreScreen(app: VisionApp, go: (String) -> Unit) {
         Entry("🩺", "Setup & health", "Permissions, battery, voice, crashes", Routes.HEALTH),
         Entry("💻", "Coding Studio", "Build, run and fix programs", Routes.CODING),
         Entry("⬇", "Models & downloads", "AI brains and voices", Routes.MODELS),
+        Entry("✈", "Offline check", "Test what works without internet", Routes.OFFLINE),
         Entry("⌨", "Termux control", "Run safe phone commands", Routes.TERMUX),
         Entry("🛡", "Privacy & action log", "See everything I did", Routes.PRIVACY),
         Entry("⚙", "Settings", "Lock screen, voice, search", Routes.SETTINGS),

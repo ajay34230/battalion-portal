@@ -45,11 +45,12 @@ object Routes {
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
     const val TERMUX = "termux"
+    const val OFFLINE = "offline"
 }
 
 private data class Tab(val route: String, val icon: String, val label: String)
 private val tabs = listOf(Tab(Routes.HOME, "🏠", "Home"), Tab(Routes.CHAT, "🎙", "Talk"), Tab(Routes.REMINDERS, "⏰", "Reminders"), Tab(Routes.MEMORY, "🧠", "Memory"), Tab(Routes.MORE, "☰", "More"))
-private val secondary = setOf(Routes.VOICE, Routes.MONEY, Routes.ROUTINES, Routes.HEALTH, Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
+private val secondary = setOf(Routes.VOICE, Routes.MONEY, Routes.ROUTINES, Routes.HEALTH, Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX, Routes.OFFLINE)
 
 @Composable
 fun VisionNav(app: VisionApp, startRoute: String? = null) {
@@ -101,6 +102,7 @@ fun VisionNav(app: VisionApp, startRoute: String? = null) {
                 composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionCenterScreen(startup = false) { back() } } }
                 composable(Routes.SETTINGS) { SettingsScreen(app, back) }
                 composable(Routes.PRIVACY) { Box(Modifier.statusBarsPadding()) { PrivacyScreen(app, back) } }
+                composable(Routes.OFFLINE) { OfflineScreen(app) }
                 composable(Routes.TERMUX) { TermuxScreen(app, back) }
             }
             Box(Modifier.align(Alignment.TopCenter)) { DownloadBanner(onClick = { nav.navigate(Routes.MODELS) { launchSingleTop = true } }) }
