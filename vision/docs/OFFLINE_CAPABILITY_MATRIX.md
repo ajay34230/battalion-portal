@@ -21,3 +21,6 @@ Honest status. "PASSED (logic)" means a CI unit test passed. Nothing has been ve
 | 15 | Whisper / Piper | sherpa-onnx or similar | no | NOT SUPPORTED |
 
 Planned: an Offline Verification screen that runs checks 1-3, 5, 8, 11 itself on the phone and records PASSED/FAILED with timestamps, plus a visible online/offline indicator (Mission 2 Phase 4).
+
+## Update: Offline check screen (More > Offline check)
+The app now runs checks 1-3, 4-5 (streaming), 5, 8, 11 itself and stores the results with a timestamp, marking whether the phone was offline throughout. Statuses in this table stay NOT TESTED until the owner has run it in airplane mode and the result is copied here.

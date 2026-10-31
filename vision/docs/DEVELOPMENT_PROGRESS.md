@@ -39,4 +39,7 @@
 | 0 Audit docs | done (VISION_ARCHITECTURE_AUDIT, ANDROID_AI_ENGINE_COMPATIBILITY, MODEL_SUPPORT_MATRIX, OFFLINE_CAPABILITY_MATRIX, SECURITY_AND_PRIVACY_REVIEW, TESTING_AND_BENCHMARK_REPORT, roadmap section) |
 | 1a Streaming, cancel, Qwen thinking switch | done, CI green (release below); device behaviour NOT TESTED |
 | 1b llama.cpp (GGUF) engine | build verified in CI (19 MB AAR); integration deferred pending device evidence, see ANDROID_AI_ENGINE_COMPATIBILITY.md |
-| 2 Model discovery + compatibility | in progress |
+| 2 Model discovery + compatibility | done, CI green: search Hugging Face litert-community, compatibility labels, strict validation, add-to-list; live search NOT TESTED on device |
+| 3 Task router | done, CI green: code / Hindi / simple routing, Speed-Balanced-Quality setting; behaviour on device NOT TESTED |
+| 4 Online/offline | done, CI green: Online/Offline chip, Offline check screen (PASSED/FAILED/BLOCKED/NOT_TESTED); not yet run in airplane mode |
+| 5 Memory embeddings + voice | in progress |
