@@ -25,6 +25,21 @@ class Orchestrator(private val app: VisionApp) {
         val lang = LanguageDetector.detect(userText)
         val db = app.database
         if (recordUser) db.chat().insert(ChatMessage(role = "user", text = userText, lang = lang.code))
+        // "do A then B": run each recognised step in order; stop at the first one that fails or needs a confirmation/permission.
+        if (recordUser) {
+            val steps = MultiStep.split(userText)
+            if (steps.size > 1) {
+                val replies = ArrayList<String>(); var last: AgentReply? = null
+                for ((i, step) in steps.withIndex()) {
+                    val r = handle(step, locked, settings, recordUser = false)
+                    replies.add("${i + 1}. ${r.text}"); last = r
+                    if (r.confirm != null || r.needsPermission != null || r.needsUnlock || r.needsImage != null) { replies.add(Say("Stopped here; the remaining steps were not run.", "Yahin ruka; baaki steps nahi chalaye.", "यहीं रुका; बाकी चरण नहीं चलाए।").`in`(lang)); break }
+                }
+                val joined = AgentReply(replies.joinToString("\n"), lang, last?.confirm, last?.needsPermission, last?.needsUnlock ?: false, last?.needsImage, last?.needsDocument ?: false)
+                db.chat().insert(ChatMessage(role = "assistant", text = joined.text, lang = lang.code))
+                return joined
+            }
+        }
         val engine = app.engines.current()
         val learned = if (recordUser) try { Learning.learn(db.memory(), userText) } catch (_: Throwable) { emptyList() } else emptyList()
 
