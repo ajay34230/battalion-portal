@@ -31,6 +31,7 @@ object Routes {
     const val REMINDERS = "reminders"
     const val MEMORY = "memory"
     const val MORE = "more"
+    const val CODING = "coding"
     const val MODELS = "models"
     const val DEVICE = "device"
     const val PERMISSIONS = "permissions"
@@ -41,7 +42,7 @@ object Routes {
 
 private data class Tab(val route: String, val icon: String, val label: String)
 private val tabs = listOf(Tab(Routes.HOME, "🏠", "Home"), Tab(Routes.CHAT, "🎙", "Talk"), Tab(Routes.REMINDERS, "⏰", "Reminders"), Tab(Routes.MEMORY, "🧠", "Memory"), Tab(Routes.MORE, "☰", "More"))
-private val secondary = setOf(Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
+private val secondary = setOf(Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
 
 @Composable
 fun VisionNav(app: VisionApp) {
@@ -78,6 +79,7 @@ fun VisionNav(app: VisionApp) {
                 composable(Routes.REMINDERS) { RemindersScreen(app) }
                 composable(Routes.MEMORY) { MemoryScreen(app) }
                 composable(Routes.MORE) { MoreScreen(app) { nav.navigate(it) { launchSingleTop = true } } }
+                composable(Routes.CODING) { CodingScreen(app) }
                 composable(Routes.MODELS) { Box(Modifier.statusBarsPadding()) { ModelsScreen(app, back) } }
                 composable(Routes.DEVICE) { Box(Modifier.statusBarsPadding()) { DeviceScreen(app.deviceProfile, back) } }
                 composable(Routes.PERMISSIONS) { Box(Modifier.statusBarsPadding()) { PermissionsScreen(back) } }

@@ -12,6 +12,8 @@ interface LlmEngine {
     /** Summarises untrusted source material for a question. Null = engine can't (caller uses an extractive summary). */
     /** Looks at a photo with a multimodal model. Null = this engine can't see images. */
     suspend fun describeImage(imagePath: String, question: String, lang: Lang): String? = null
+    /** Free-form completion with a system prompt (used by the coding engine). Null = no neural model. */
+    suspend fun complete(system: String, prompt: String): String? = null
     suspend fun summarize(query: String, material: String, lang: Lang): String? = null
 }
 

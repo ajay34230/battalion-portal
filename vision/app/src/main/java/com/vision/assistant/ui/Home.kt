@@ -98,6 +98,7 @@ private data class Entry(val icon: String, val title: String, val sub: String, v
 @Composable
 fun MoreScreen(app: VisionApp, go: (String) -> Unit) {
     val entries = listOf(
+        Entry("💻", "Coding Studio", "Build, run and fix programs", Routes.CODING),
         Entry("⬇", "Models & downloads", "AI brains and voices", Routes.MODELS),
         Entry("⌨", "Termux control", "Run safe phone commands", Routes.TERMUX),
         Entry("🛡", "Privacy & action log", "See everything I did", Routes.PRIVACY),

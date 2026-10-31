@@ -47,6 +47,8 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
         return try { generate(system, "Question: $query\n\nSources:\n$material\n\nSummary:").takeIf { it.isNotBlank() } } catch (_: Throwable) { null }
     }
 
+    override suspend fun complete(system: String, prompt: String): String? = try { generate(system, prompt).takeIf { it.isNotBlank() } } catch (_: Throwable) { null }
+
     override suspend fun plan(userText: String): Plan? =
         PlanParser.parse(generate(PlanParser.SYSTEM, "\"$userText\" ->"))
 

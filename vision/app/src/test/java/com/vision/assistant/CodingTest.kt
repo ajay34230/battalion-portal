@@ -97,3 +97,17 @@ class TemplateExportTest {
         for (t in Templates.all) { store.create(t.id).getOrThrow(); t.files.forEach { (p, c) -> store.write(t.id, p, c).getOrThrow() } }
     }
 }
+
+class TermuxRunnerTest {
+    @Test fun choosesRunnerByExtension() {
+        assertEquals("python3 'report.py'", TermuxRunner.runnerFor("report.py"))
+        assertEquals("python3 'test_report.py' -v", TermuxRunner.runnerFor("test_report.py"))
+        assertEquals("node 'test.js'", TermuxRunner.runnerFor("test.js")); assertNull(TermuxRunner.runnerFor("a.png"))
+    }
+    @Test fun scriptCarriesFilesAsBase64AndStaysInProjectsFolder() {
+        val s = TermuxRunner.script("demo", mapOf("a.py" to "print('hi')\n", "src/b.txt" to "x"), "python3 'a.py'")!!
+        assertTrue(s.contains("\$HOME/projects/demo")); assertTrue(s.contains("mkdir -p 'src'")); assertFalse(s.contains("print('hi')"))
+        assertTrue(s.endsWith("python3 'a.py'"))
+    }
+    @Test fun tooLargeProjectIsRefused() = assertNull(TermuxRunner.script("big", mapOf("x.txt" to "a".repeat(200_000)), "true"))
+}

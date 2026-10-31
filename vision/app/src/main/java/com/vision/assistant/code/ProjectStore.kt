@@ -94,12 +94,18 @@ class ProjectStore(val root: File) {
             while (e != null) {
                 if (!e.isDirectory && n < MAX_FILES) {
                     val rel = safeRelative(e.name.substringAfter('/', e.name))
-                    if (rel != null) { val bytes = z.readNBytes(MAX_FILE_BYTES + 1); if (bytes.size <= MAX_FILE_BYTES) { File(dir(name), rel).apply { parentFile?.mkdirs(); writeBytes(bytes) }; n++ } }
+                    if (rel != null) { val bytes = readLimited(z, MAX_FILE_BYTES + 1); if (bytes.size <= MAX_FILE_BYTES) { File(dir(name), rel).apply { parentFile?.mkdirs(); writeBytes(bytes) }; n++ } }
                 }
                 e = z.nextEntry
             }
         }
         return Result.success(n)
+    }
+
+    private fun readLimited(input: java.io.InputStream, limit: Int): ByteArray {
+        val buf = java.io.ByteArrayOutputStream(); val chunk = ByteArray(8192); var total = 0
+        while (total < limit) { val n = input.read(chunk, 0, minOf(chunk.size, limit - total)); if (n < 0) break; buf.write(chunk, 0, n); total += n }
+        return buf.toByteArray()
     }
 
     // ---- snapshots (rollback) ----
