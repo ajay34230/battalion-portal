@@ -164,6 +164,28 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
             }
         }
         OutlinedButton(onClick = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("Import a VISION export") }
+        GroupHeader("Diagnostics", "Reply times, model loads and crashes, kept only on this phone")
+        run {
+            var tick by remember { mutableStateOf(0) }
+            val entries = remember(tick) { com.vision.assistant.diag.DiagLog.read() }
+            val lines = remember(entries) { com.vision.assistant.diag.DiagFormat.summarise(entries) }
+            val bad = remember(entries) { com.vision.assistant.diag.DiagFormat.problems(entries, 4) }
+            if (lines.isEmpty()) Text("Nothing recorded yet. Ask VISION something, then tap Refresh.", fontSize = 12.sp, color = VisionColors.Muted)
+            for (l in lines.take(6)) Text(l, fontSize = 12.sp)
+            for (e in bad) Text("! ${e.kind}: ${e.msg.take(120)}", fontSize = 11.sp, color = androidx.compose.ui.graphics.Color(0xFFFFB74D))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { tick++ }) { Text("Refresh") }
+                Button(onClick = {
+                    try {
+                        val f = com.vision.assistant.core.SharedFiles.file(ctx, "vision-diagnostics.txt").also { it.writeText(com.vision.assistant.diag.DiagLog.exportText(ctx)) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
+                        ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Share VISION diagnostics").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (t: Throwable) { msg = "Could not share the log: ${t.message}" }
+                }) { Text("Share log") }
+                OutlinedButton(onClick = { com.vision.assistant.diag.DiagLog.clear(); tick++ }) { Text("Clear") }
+            }
+            Text("The log holds timings, model names and error text. It never holds your messages or VISION's replies.", fontSize = 11.sp, color = VisionColors.Muted)
+        }
         OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }) { Text("Notification access settings") }
         if (msg.isNotBlank()) Text(msg)
         Text("Action log (latest first)", style = MaterialTheme.typography.titleMedium)

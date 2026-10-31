@@ -71,6 +71,7 @@ object CrashLog {
         val app = ctx.applicationContext
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            try { com.vision.assistant.diag.DiagLog.crash(t.name, e) } catch (_: Throwable) {}
             try { file(app).writeText("${java.util.Date()}\n${t.name}\n" + e.stackTraceToString().take(3500)) } catch (_: Throwable) {}
             previous?.uncaughtException(t, e)
         }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 class VisionApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.vision.assistant.diag.DiagLog.init(this)
         com.vision.assistant.health.CrashLog.install(this)
         com.vision.assistant.tasks.ReminderScheduler.ensureChannels(this)
         try { com.vision.assistant.tasks.Routines.scheduleAll(this) } catch (_: Throwable) {}

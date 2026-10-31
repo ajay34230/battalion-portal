@@ -59,8 +59,8 @@ class EngineProvider(private val app: VisionApp) {
         // If the process died while a model was loading (out of memory), blame that model and skip it from now on.
         // A crash while the GPU was being tried is the GPU's fault, not the model's: remember that and use the CPU for it next time.
         val gpuTry = prefs.getString("loading_gpu", null)
-        if (gpuTry != null) { prefs.edit().putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) + gpuTry).remove("loading_gpu").remove("loading").apply() }
-        else prefs.getString("loading", null)?.let { markBad(it); prefs.edit().remove("loading").apply() }
+        if (gpuTry != null) { com.vision.assistant.diag.DiagLog.log("model_crash", "app died while loading $gpuTry on the GPU; using CPU next time"); prefs.edit().putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) + gpuTry).remove("loading_gpu").remove("loading").apply() }
+        else prefs.getString("loading", null)?.let { com.vision.assistant.diag.DiagLog.log("model_crash", "app died while loading model $it"); markBad(it); prefs.edit().remove("loading").apply() }
         while (true) {
             val entry = installed(needImage)
             if (entry == null) {
@@ -78,7 +78,9 @@ class EngineProvider(private val app: VisionApp) {
                 val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
                 e.onStall = { abandon(entry.id) }
                 e.onAnswered = { answered.add(entry.id) }
+                val loadStart = System.currentTimeMillis()
                 e.load(tryGpu = useGpu)
+                com.vision.assistant.diag.DiagLog.log("load", if (e.gpuError != null) "GPU unavailable: ${e.gpuError}" else "", System.currentTimeMillis() - loadStart, entry.title, e.backend)
                 prefs.edit().remove("loading").remove("loading_gpu").apply()
                 current = e; currentId = entry.id; lastError = null
                 label.value = entry.title + " · " + e.backend + (e.gpuError?.let { " (GPU unavailable: $it)" } ?: "")
@@ -86,6 +88,7 @@ class EngineProvider(private val app: VisionApp) {
             } catch (t: Throwable) {
                 prefs.edit().remove("loading").apply()
                 lastError = t.message ?: t.javaClass.simpleName
+                com.vision.assistant.diag.DiagLog.log("load_failed", lastError ?: "", model = entry.title)
                 markBad(entry.id)
                 current = RuleBasedEngine(); currentId = null
                 label.value = "${entry.title} failed to load ($lastError); trying a smaller model"

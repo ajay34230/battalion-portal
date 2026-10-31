@@ -60,7 +60,9 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
         orb.value = OrbState.THINKING
         job = scope.launch {
             val locked = !forceUnlocked && isLocked()
+            val t0 = System.currentTimeMillis()
             val r = try { orchestrator.handle(text.trim(), locked, LockPrefs.load(ctx), recordUser = !forceUnlocked) } catch (t: Throwable) { AgentReply("Something went wrong: ${t.message}", Lang.EN) }
+            com.vision.assistant.diag.DiagLog.log("reply_total", "", System.currentTimeMillis() - t0, app.engines.label.value.substringBefore(" · "), app.engines.label.value.substringAfter(" · ", "").substringBefore(" ("))
             deliver(r, text.trim())
         }
     }
