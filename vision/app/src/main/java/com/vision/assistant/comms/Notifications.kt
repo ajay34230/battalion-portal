@@ -30,6 +30,7 @@ class VisionNotificationListener : NotificationListenerService() {
                     val dao = appRef.database.payments()
                     if (dao.duplicates(pay.direction.name, pay.amountPaise, pay.party, System.currentTimeMillis() - 120_000) == 0)
                         dao.insert(com.vision.assistant.data.PaymentRecord(direction = pay.direction.name, paise = pay.amountPaise, party = pay.party, bill = pay.bill, category = com.vision.assistant.finance.PaymentParser.suggestCategory(pay.party, pay.bill), source = sbn.packageName))
+                    com.vision.assistant.VisionWidget.refresh(appRef)
                 }
             }
         }

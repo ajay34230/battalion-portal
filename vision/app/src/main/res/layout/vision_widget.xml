@@ -1,12 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="14dp" android:background="@drawable/widget_bg">
-    <TextView android:id="@+id/widget_brand" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="V I S I O N" android:textColor="#FF00E5FF" android:textSize="11sp" android:letterSpacing="0.2" />
-    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="6dp" android:text="Nothing coming up" android:textColor="#FFE6F3FF" android:textSize="17sp" android:maxLines="2" android:ellipsize="end" />
-    <TextView android:id="@+id/widget_when" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="Tap to talk to VISION" android:textColor="#FF8FA8C4" android:textSize="12sp" android:maxLines="1" />
-</LinearLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_bg_day">
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_aurora" android:scaleType="fitXY" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="14dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/widget_logo" android:contentDescription="@null" />
+            <TextView android:id="@+id/widget_greeting" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp"
+                android:text="Good evening" android:textColor="#FFE6F3FF" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+            <TextClock android:id="@+id/widget_clock" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:format12Hour="h:mm a" android:format24Hour="HH:mm" android:textColor="#FF00E5FF" android:textSize="22sp" android:textStyle="bold" />
+        </LinearLayout>
+        <TextView android:id="@+id/widget_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="end" android:text="" android:textColor="#FF8FA8C4" android:textSize="11sp" />
+
+        <LinearLayout android:id="@+id/widget_chips" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+            <LinearLayout android:id="@+id/chip_spent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:padding="8dp" android:background="@drawable/widget_chip_spent">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SPENT TODAY" android:textColor="#CCFF8A80" android:textSize="9sp" android:letterSpacing="0.1" />
+                <TextView android:id="@+id/spent_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="₹0" android:textColor="#FFFFFFFF" android:textSize="17sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/chip_recv" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:padding="8dp" android:layout_marginStart="6dp" android:background="@drawable/widget_chip_recv">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="RECEIVED" android:textColor="#CC3DFFC0" android:textSize="9sp" android:letterSpacing="0.1" />
+                <TextView android:id="@+id/recv_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="₹0" android:textColor="#FFFFFFFF" android:textSize="17sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/chip_bill" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:padding="8dp" android:layout_marginStart="6dp" android:background="@drawable/widget_chip_bill">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BILL DUE" android:textColor="#CCFFB74D" android:textSize="9sp" android:letterSpacing="0.1" />
+                <TextView android:id="@+id/bill_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#FFFFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/widget_pace" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="7dp">
+            <TextView android:id="@+id/pace_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:textColor="#FF8FA8C4" android:textSize="10sp" android:maxLines="1" />
+            <ProgressBar android:id="@+id/pace_bar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="3dp" android:max="100" android:progress="0" android:progressDrawable="@drawable/widget_progress" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal" android:gravity="bottom|center_vertical" android:layout_marginTop="6dp">
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nothing coming up" android:textColor="#FFE6F3FF" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/widget_when" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tap to talk to VISION" android:textColor="#FF8FA8C4" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+            <TextView android:id="@+id/widget_talk" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🎙 Ask" android:textColor="#FF04101C" android:textSize="13sp" android:textStyle="bold" android:paddingStart="14dp" android:paddingEnd="14dp" android:paddingTop="7dp" android:paddingBottom="7dp" android:background="@drawable/widget_button" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

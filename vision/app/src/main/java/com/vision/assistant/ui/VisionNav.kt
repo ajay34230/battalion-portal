@@ -52,11 +52,12 @@ private val tabs = listOf(Tab(Routes.HOME, "üè†", "Home"), Tab(Routes.CHAT, "ü
 private val secondary = setOf(Routes.VOICE, Routes.MONEY, Routes.ROUTINES, Routes.HEALTH, Routes.CODING, Routes.MODELS, Routes.DEVICE, Routes.PERMISSIONS, Routes.SETTINGS, Routes.PRIVACY, Routes.TERMUX)
 
 @Composable
-fun VisionNav(app: VisionApp) {
+fun VisionNav(app: VisionApp, startRoute: String? = null) {
     val nav = rememberNavController()
     val back = { nav.popBackStack(); Unit }
     var pendingSay by remember { mutableStateOf<String?>(null) }
     val appCtx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(startRoute) { if (startRoute != null) nav.navigate(startRoute) { launchSingleTop = true } }
     var askPerms by remember { mutableStateOf(PermissionCenter.needsAsk(appCtx)) }
     if (askPerms) { Box(Modifier.statusBarsPadding()) { PermissionCenterScreen(startup = true) { askPerms = false } }; return }
     val entry by nav.currentBackStackEntryAsState()

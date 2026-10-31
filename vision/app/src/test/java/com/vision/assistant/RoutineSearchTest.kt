@@ -108,3 +108,8 @@ class VoiceprintTest {
     @org.junit.Test fun enrolmentPhraseCheck() { org.junit.Assert.assertTrue(V.isWakePhrase("hey vision")); org.junit.Assert.assertFalse(V.isWakePhrase("good morning")) }
     @org.junit.Test fun bareVisionOnlyWhenEnrolled() { org.junit.Assert.assertTrue(com.vision.assistant.service.WakeWord.matchesEnrolled("vision")); org.junit.Assert.assertFalse(com.vision.assistant.service.WakeWord.matches("vision")) }
 }
+
+class WidgetLogicTest {
+    @org.junit.Test fun greeting() { org.junit.Assert.assertEquals("Good morning", com.vision.assistant.VisionWidget.greetingFor(8)); org.junit.Assert.assertEquals("Good evening", com.vision.assistant.VisionWidget.greetingFor(18)); org.junit.Assert.assertEquals("Good night", com.vision.assistant.VisionWidget.greetingFor(2)) }
+    @org.junit.Test fun paceBar() { org.junit.Assert.assertEquals(0, com.vision.assistant.VisionWidget.pacePercent(100, 0)); org.junit.Assert.assertEquals(50, com.vision.assistant.VisionWidget.pacePercent(100, 100)); org.junit.Assert.assertEquals(100, com.vision.assistant.VisionWidget.pacePercent(900, 100)) }
+}
