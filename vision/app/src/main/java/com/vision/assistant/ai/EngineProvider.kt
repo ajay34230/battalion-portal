@@ -42,7 +42,8 @@ class EngineProvider(private val app: VisionApp) {
         else (ok.filter { !it.multimodal }.maxByOrNull { it.sizeBytes } ?: ok.maxByOrNull { it.sizeBytes })
     }
 
-    private suspend fun select(needImage: Boolean): LlmEngine? = mutex.withLock {
+    private suspend fun select(needImage: Boolean): LlmEngine? {
+      mutex.withLock {
         // If the process died while a model was loading (out of memory), blame that model and skip it from now on.
         prefs.getString("loading", null)?.let { markBad(it); prefs.edit().remove("loading").apply() }
         while (true) {
@@ -73,7 +74,8 @@ class EngineProvider(private val app: VisionApp) {
                 if (needImage) return null
             }
         }
-        @Suppress("UNREACHABLE_CODE") null
+      }
+      return null
     }
 
     /** Called after a model download finishes or a model is deleted. */
