@@ -24,6 +24,6 @@ class ManifestSanityTest {
         }
         val nine = com.vision.assistant.core.ResourceManifest.entries.first { it.id == "qwen3.5-9b-int4" }
         org.junit.Assert.assertTrue(nine.experimental); org.junit.Assert.assertEquals(6_060_357_536L, nine.sizeBytes)
-        org.junit.Assert.assertEquals(1, com.vision.assistant.core.ResourceManifest.entries.count { it.experimental })
+        org.junit.Assert.assertEquals(2, com.vision.assistant.core.ResourceManifest.entries.count { it.experimental })
     }
 }

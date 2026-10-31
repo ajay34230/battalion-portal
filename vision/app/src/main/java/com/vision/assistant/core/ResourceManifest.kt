@@ -63,6 +63,24 @@ object ResourceManifest {
             "Apache-2.0", "multilingual (incl. Hindi)", "For 8 GB+ phones such as iQOO 7. Published benchmark: about 6 tokens/s on an 8 GB Pixel 8a CPU, ~4.4 GB peak memory. Text only.",
         ),
         ResourceEntry(
+            "granite-4.0-350m", ResourceKind.LLM, "IBM Granite 4.0 350M (int8) — tiny, fast",
+            "https://huggingface.co/litert-community/granite-4.0-350m-litert-lm/resolve/main/granite-4.0-350m_q8_ekv1280.litertlm", "granite-4.0-350m_q8_ekv1280.litertlm",
+            "c8e9a29493f62b7c44461fb36980987c4c1454c75e95f57ba0539a8edc9dce76", 468_209_584, 2_000,
+            "Apache-2.0", "mainly English; weak Hindi", "Very small and quick for simple commands and short answers. Verified file on Hugging Face; not tested on a phone.",
+        ),
+        ResourceEntry(
+            "qwen3-1.7b", ResourceKind.LLM, "Qwen3 1.7B — balanced, multilingual",
+            "https://huggingface.co/litert-community/Qwen3-1.7B/resolve/main/Qwen3_1.7B.litertlm", "Qwen3_1.7B.litertlm",
+            "e40599625f3e446d6522674586a40566d6a3a117af608f6e9ea46ac86d326461", 1_754_890_240, 4_000,
+            "Apache-2.0", "multilingual (incl. Hindi)", "A good middle size for 6–8 GB phones: smarter than 0.6B, lighter than 4B. Verified file on Hugging Face; not tested on a phone.",
+        ),
+        ResourceEntry(
+            "gemma4-12b", ResourceKind.LLM, "Gemma 4 12B — experimental, very large",
+            "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/main/gemma-4-12B-it.litertlm", "gemma-4-12B-it.litertlm",
+            "58fd31b778ca2c21c80d634fb34fc5a89d11d563a38dfd3cbf1b40dbf252a8b6", 6_883_278_368, 10_000,
+            "Apache-2.0", "multilingual", "EXPERIMENTAL: 6.9 GB file; needs about 10 GB+ of real RAM (virtual/extended RAM does not help). Expect it to be slow or to close the app on an 8 GB phone. Used as a text model here.", experimental = true,
+        ),
+        ResourceEntry(
             "qwen3.5-9b-int4", ResourceKind.LLM, "Qwen3.5 9B (mixed int4) — experimental, strongest",
             "$HF/Qwen3.5-9B/resolve/main/Qwen3.5-9B_mixed_int4.litertlm", "Qwen3.5-9B_mixed_int4.litertlm",
             "61042ebd3c473763972d22310c055f63fab5a29bc2976ab533d6a59c262cac65", 6_060_357_536, 8_000,
