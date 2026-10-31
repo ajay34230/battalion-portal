@@ -85,6 +85,12 @@ fun RemindersScreen(app: VisionApp) {
                             }
                         }
                         Column {
+                            TextButton(onClick = {
+                                t.dueAt?.let { d -> try { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_INSERT).setData(android.provider.CalendarContract.Events.CONTENT_URI)
+                                    .putExtra(android.provider.CalendarContract.Events.TITLE, k.emoji + " " + t.title).putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, d)
+                                    .putExtra(android.provider.CalendarContract.EXTRA_EVENT_ALL_DAY, k != EventKind.REMINDER).also { i -> t.repeat?.let { r -> when (r.substringBefore(':')) { "yearly" -> i.putExtra(android.provider.CalendarContract.Events.RRULE, "FREQ=YEARLY"); "monthly" -> i.putExtra(android.provider.CalendarContract.Events.RRULE, "FREQ=MONTHLY"); "weekly" -> i.putExtra(android.provider.CalendarContract.Events.RRULE, "FREQ=WEEKLY"); else -> {} } } }
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {} }
+                            }) { Text("+ Calendar") }
                             TextButton(onClick = { scope.launch { app.database.tasks().update(t.copy(done = true)); ReminderScheduler.cancelTask(ctx, t) } }) { Text("Done") }
                             TextButton(onClick = { scope.launch { ReminderScheduler.cancelTask(ctx, t); app.database.tasks().delete(t) } }) { Text("Delete", color = androidx.compose.ui.graphics.Color(0xFFFF6B6B)) }
                         }

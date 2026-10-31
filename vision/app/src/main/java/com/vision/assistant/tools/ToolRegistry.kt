@@ -34,11 +34,23 @@ class ToolRegistry(private val app: VisionApp) {
                 ToolResult.Success(Say("Saved to memory.", "Memory mein save kar diya.", "स्मृति में सहेज दिया।"))
             }
             is Intent.Recall -> {
-                val found = db.memory().search(intent.query, 5)
+                val found = db.memory().search(intent.query, 5).ifEmpty {
+                    val all = db.memory().list().filter { it.category != "creator" }
+                    com.vision.assistant.memory.SemanticIndex.rank(intent.query, all.map { it.content }, 5).map { all[it.first] }
+                }
                 if (found.isEmpty()) ToolResult.Failure(Say("Nothing saved about \"${intent.query}\".", "\"${intent.query}\" ke baare mein kuch save nahi hai.", "\"${intent.query}\" के बारे में कुछ सहेजा नहीं है।"))
                 else ToolResult.Success(Say.plain(found.joinToString("\n") { "• " + it.content }))
             }
             is Intent.Search -> research.run(intent.query, intent.mode)
+            is Intent.Calendar -> {
+                if (!com.vision.assistant.comms.CalendarReader.hasPermission(app)) ToolResult.NeedsPermission(com.vision.assistant.comms.CalendarReader.PERMISSION, Say.plain("I need permission to read your calendar."))
+                else { val ev = com.vision.assistant.comms.CalendarReader.upcoming(app, intent.days); ToolResult.Success(Say.plain(com.vision.assistant.comms.CalendarReader.format(if (intent.days == 2) ev.filter { it.begin >= startOfTomorrow() } else ev, intent.days))) }
+            }
+            is Intent.RunRoutine -> {
+                val r = com.vision.assistant.tasks.Routines.find(app, intent.name)
+                if (r == null) ToolResult.Failure(Say.plain("I don't have a routine called \"${intent.name}\". Create one in More → Routines."))
+                else ToolResult.Success(Say.plain("Running ${r.name}:\n" + com.vision.assistant.tasks.Routines.run(app, r)))
+            }
             is Intent.Termux -> termux(intent.line)
             is Intent.WhatsAppDraft -> device.whatsappDraft(intent.text)
             is Intent.ReadNotifications -> notifications(intent.whatsappOnly)
@@ -49,6 +61,8 @@ class ToolRegistry(private val app: VisionApp) {
             is Intent.See, is Intent.Chat -> ToolResult.Failure(Say("no tool"))
         }
     }
+
+    private fun startOfTomorrow(): Long = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, 1); set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0) }.timeInMillis
 
     private suspend fun termux(line: String): ToolResult {
         val v = when (val r = com.vision.assistant.termux.CommandPolicy.validateLine(line, com.vision.assistant.termux.TermuxPrefs.advanced(app))) {

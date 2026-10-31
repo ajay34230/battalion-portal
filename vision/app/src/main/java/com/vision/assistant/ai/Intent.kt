@@ -19,6 +19,9 @@ sealed interface Intent {
     data class Termux(val line: String) : Intent
     /** Look at a photo (or read a PDF when [document]) and answer [question]. */
     data class See(val question: String, val document: Boolean) : Intent
+    /** Read upcoming calendar events for the next [days] days. */
+    data class Calendar(val days: Int) : Intent
+    data class RunRoutine(val name: String) : Intent
     data object ReadEmail : Intent
     data object AskTime : Intent
     data object AskBattery : Intent
@@ -46,6 +49,11 @@ object IntentParser {
         Regex("^(?:remember|note|yaad rakho|yaad rakhna|note kar)\\s+(?:that\\s+|ki\\s+)?(.+)$").find(l)?.let { return Intent.Remember(it.groupValues[1].trim()) }
         Regex("^(?:what do you remember about|recall|mujhe yaad dilao|kya yaad hai)\\s+(.+)$").find(l)?.let { return Intent.Recall(it.groupValues[1].trim()) }
 
+        Regex("^(?:run|start|do|chalao|shuru karo)\\s+(?:the\\s+)?(.+?)\\s+routine$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
+        Regex("^(?:run|start)\\s+routine\\s+(.+)$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
+        Regex("^(.+?)\\s+routine\\s+(?:chalao|shuru karo|run karo)$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
+        if (Regex("my (calendar|schedule|agenda)|what'?s on (my )?(calendar|today|tomorrow)|events (today|tomorrow)|aaj ka schedule|kal ka schedule|calendar (mein|me) kya|मेरा कैलेंडर|आज का शेड्यूल").containsMatchIn(l))
+            return Intent.Calendar(if (Regex("week|hafte|हफ्ते").containsMatchIn(l)) 7 else if (Regex("tomorrow|kal|कल").containsMatchIn(l)) 2 else 1)
         com.vision.assistant.tasks.EventParser.parse(t)?.let { return Intent.SetEvent(it.kind.id, it.title, it.month, it.day, it.monthly, it.lang) }
         if (Regex("remind|reminder|yaad dila|utha dena|utha do|jaga dena|alarm|याद दिला|उठा").containsMatchIn(l)) {
             val repeat = if (Regex("every|har ").containsMatchIn(l)) weekdays.entries.firstOrNull { l.contains(it.key) }?.value else null

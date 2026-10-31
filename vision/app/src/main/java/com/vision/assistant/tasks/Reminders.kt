@@ -145,6 +145,16 @@ object ReminderScheduler {
         NotificationManagerCompat.from(ctx).notify(nid, b.build())
     }
 
+    /** Plain informational notification (routine results). */
+    fun notifyText(ctx: Context, nid: Int, title: String, body: String) {
+        ensureChannels(ctx)
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val s = style(EventKind.REMINDER)
+        NotificationManagerCompat.from(ctx).notify(nid, NotificationCompat.Builder(ctx, s.channel).setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle(title).setContentText(body.lineSequence().firstOrNull().orEmpty()).setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setColor(Color.parseColor(s.color)).setAutoCancel(true).build())
+    }
+
     private fun enqueue(ctx: Context, name: String, atMillis: Long, id: Long, text: String, kind: String, lead: Int, lang: String) {
         val delay = (atMillis - System.currentTimeMillis()).coerceAtLeast(0)
         val data = Data.Builder().putLong("id", id).putString("text", text).putString("kind", kind).putInt("lead", lead).putString("lang", lang).build()

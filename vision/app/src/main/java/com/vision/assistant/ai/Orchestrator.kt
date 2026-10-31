@@ -85,7 +85,7 @@ class Orchestrator(private val app: VisionApp) {
     }
 
     private fun isFastCommand(i: Intent) = when (i) {
-        is Intent.Termux, is Intent.See, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
+        is Intent.Termux, is Intent.See, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall, is Intent.Calendar, is Intent.RunRoutine -> true
         is Intent.OpenApp -> i.app.trim().split(Regex("\\s+")).size <= 3
         is Intent.Call -> i.contact.trim().split(Regex("\\s+")).size <= 3
         else -> false
