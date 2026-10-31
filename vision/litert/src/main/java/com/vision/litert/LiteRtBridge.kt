@@ -13,9 +13,12 @@ class LiteRtBridge {
 
     /** "GPU" or "CPU": what the loaded model actually runs on. */
     var backendName: String = "CPU"; private set
+    /** Why the GPU was not used (null when it was, or not attempted). */
+    var gpuError: String? = null; private set
 
     /** Tries the phone's GPU first when [tryGpu] (much faster for big models) and falls back to the CPU if that fails to initialise or to answer a test prompt. */
     fun load(modelPath: String, cacheDir: String, vision: Boolean = false, tryGpu: Boolean = false) {
+        gpuError = null
         if (tryGpu) {
             try {
                 val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.GPU(), visionBackend = Backend.GPU(), cacheDir = cacheDir)
@@ -23,7 +26,7 @@ class LiteRtBridge {
                 val e = Engine(cfg); e.initialize(); engine = e
                 generate("Reply with one word.", "Hi") // compile the GPU kernels now, inside the crash-guarded window
                 backendName = "GPU"; return
-            } catch (_: Throwable) { close() }
+            } catch (t: Throwable) { gpuError = (t.message ?: t.javaClass.simpleName).take(160); close() }
         }
         val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.CPU(), visionBackend = Backend.CPU(), cacheDir = cacheDir)
         else EngineConfig(modelPath = modelPath, backend = Backend.CPU(), cacheDir = cacheDir)

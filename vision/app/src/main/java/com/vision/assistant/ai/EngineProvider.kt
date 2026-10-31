@@ -67,7 +67,7 @@ class EngineProvider(private val app: VisionApp) {
                 e.load(tryGpu = useGpu)
                 prefs.edit().remove("loading").remove("loading_gpu").apply()
                 current = e; currentId = entry.id; lastError = null
-                label.value = entry.title + " · " + e.backend
+                label.value = entry.title + " · " + e.backend + (e.gpuError?.let { " (GPU unavailable: $it)" } ?: "")
                 return e
             } catch (t: Throwable) {
                 prefs.edit().remove("loading").apply()

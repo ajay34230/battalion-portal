@@ -16,9 +16,10 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
     private val lock = Mutex()
 
     var backend = "CPU"; private set
+    var gpuError: String? = null; private set
     suspend fun load(tryGpu: Boolean = false) = withContext(Dispatchers.IO) {
         bridge.load(modelFile.absolutePath, ctx.cacheDir.path, vision = multimodal, tryGpu = tryGpu)
-        backend = bridge.backendName
+        backend = bridge.backendName; gpuError = bridge.gpuError
     }
 
     fun close() = bridge.close()
