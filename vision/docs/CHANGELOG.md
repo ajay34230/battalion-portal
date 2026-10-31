@@ -32,3 +32,6 @@
 
 ## Download reliability
 - Model downloads now retry automatically (up to 8 times with 2–30 s waits, counter resets whenever bytes arrive), resuming from the saved partial file after a timeout, reset or "connection closed early". Read timeout 30 s per attempt. Only a hard HTTP 4xx (except 408/429) stops immediately. Checksum verification is unchanged.
+
+## Model checksums refreshed
+- Qwen3 0.6B and Qwen3 4B were re-uploaded upstream (new size and SHA-256), so downloads failed verification. Manifest updated from a live comparison of all 8 model entries against Hugging Face (the other six matched). The comparison now runs in the 'VISION resolve resource hashes' workflow.

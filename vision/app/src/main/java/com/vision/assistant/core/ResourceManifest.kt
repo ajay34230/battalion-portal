@@ -34,14 +34,14 @@ object ResourceManifest {
             "qwen3-0.6b-int4", ResourceKind.LLM, "Qwen3 0.6B (int4) — small language model",
             "$HF/Qwen3-0.6B/resolve/main/Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
             "Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
-            "03e7da1eb1108b50dffaa9bb52cc7bcbad2eb0c66ca990267f480c1e545d2856", 344_671_744, 2_500,
+            "bf1aba9ce8d963124407353c6aa4cbf72eba78db21ae133de983eac672ce83e0", 343_490_560, 2_500,
             "Apache-2.0", "multilingual (incl. Hindi)", "Runs on most 64-bit phones.",
         ),
         ResourceEntry(
             "qwen3-4b-int4", ResourceKind.LLM, "Qwen3 4B (mixed int4) — advanced language model",
             "$HF/Qwen3-4B/resolve/main/qwen3_4b_mixed_int4.litertlm",
             "qwen3_4b_mixed_int4.litertlm",
-            "569fe029f51e55b6377f98ebd7f6d26431bc73e1d632034f5389f2fd720da701", 2_659_053_760, 6_000,
+            "4877b236f09c0b519958612afeb3c6fc6575c7ce56080d0d3a5406150e0ff9ce", 2_272_935_936, 6_000,
             "Apache-2.0", "multilingual (incl. Hindi)", "Needs a phone with about 8 GB RAM; large download.",
         ),
         ResourceEntry(
