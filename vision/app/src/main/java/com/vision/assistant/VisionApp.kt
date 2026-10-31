@@ -19,6 +19,7 @@ class VisionApp : Application() {
         try { com.vision.assistant.finance.PaymentReview.schedule(this) } catch (_: Throwable) {}
         // Load an installed language model in the background so the first reply is not slow.
         appScope.launch {
+            com.vision.assistant.core.SharedFiles.sweep(this@VisionApp)
             // VISION always knows who built it.
             val sp = getSharedPreferences("vision_prefs", MODE_PRIVATE)
             if (!sp.getBoolean("creator_seeded", false)) {

@@ -120,6 +120,9 @@ fun VisualTestPanel(studio: CodeStudio, project: String, files: List<String>) {
                 AndroidView(factory = { c ->
                     WebView(c).apply {
                         settings.javaScriptEnabled = true; settings.allowFileAccess = true; settings.blockNetworkLoads = true; settings.allowContentAccess = false
+                        // The page under test is project code, possibly written by an AI: it may not read other files or open windows.
+                        @Suppress("DEPRECATION") run { settings.allowFileAccessFromFileURLs = false; settings.allowUniversalAccessFromFileURLs = false }
+                        settings.setGeolocationEnabled(false); settings.javaScriptCanOpenWindowsAutomatically = false; settings.setSupportMultipleWindows(false)
                         webViewClient = object : WebViewClient() { override fun onPageFinished(v: WebView?, url: String?) { loaded++ } }
                         webRef = this
                     }

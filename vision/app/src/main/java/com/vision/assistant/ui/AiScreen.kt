@@ -100,7 +100,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
     val pickDoc = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) session.analyze(uri, seeQuestion, true) else session.imageRequest.value = null }
     fun camera(q: String) {
         seeQuestion = q
-        val f = java.io.File(ctx.cacheDir, "cam-${System.currentTimeMillis()}.jpg")
+        val f = com.vision.assistant.core.SharedFiles.file(ctx, "cam-${System.currentTimeMillis()}.jpg")
         val u = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
         camUri = u; takePic.launch(u)
     }

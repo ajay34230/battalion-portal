@@ -205,7 +205,7 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                     OutlinedButton(onClick = { status = problemsText() }) { Text("Check") }
                     OutlinedButton(onClick = {
                         try {
-                            val out = java.io.File(ctx.cacheDir, "${ProjectStore.slug(name)}.zip")
+                            val out = com.vision.assistant.core.SharedFiles.file(ctx, "${ProjectStore.slug(name)}.zip")
                             out.outputStream().use { store.exportZip(name, it) }
                             val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", out)
                             ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Export ${name}.zip").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

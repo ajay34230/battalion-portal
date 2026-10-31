@@ -151,7 +151,7 @@ fun PrivacyScreen(app: VisionApp, back: () -> Unit) {
             scope.launch {
                 try {
                     val json = com.vision.assistant.backup.Backup.toJson(app.database.memory().list(), app.database.tasks().pending() + emptyList())
-                    val f = java.io.File(ctx.cacheDir, "vision-backup.json").also { it.writeText(json) }
+                    val f = com.vision.assistant.core.SharedFiles.file(ctx, "vision-backup.json").also { it.writeText(json) }
                     val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
                     ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Export my VISION data").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     msg = "Backup ready: your memory and open reminders as a JSON file (no passwords or keys)."
