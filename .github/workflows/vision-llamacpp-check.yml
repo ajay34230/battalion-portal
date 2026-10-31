@@ -1,0 +1,36 @@
+name: VISION llama.cpp build check
+on:
+  workflow_dispatch:
+  push:
+    branches: ['vision/phase-0']
+    paths: ['.github/workflows/vision-llamacpp-check.yml']
+permissions:
+  contents: read
+concurrency:
+  group: vision-llamacpp-check
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: Get llama.cpp (pinned release)
+        run: |
+          git clone --depth 1 --branch v0.8.0 https://github.com/ggml-org/llama.cpp.git src
+          cd src/examples/llama.android && ls && cat gradle/wrapper/gradle-wrapper.properties 2>/dev/null | grep distributionUrl || true
+          echo "::notice title=LLAMA-COMMIT::$(git -C ../.. rev-parse HEAD)"
+      - name: Install NDK and CMake the library asks for
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.13113456" "cmake;3.31.6" "platforms;android-36" "build-tools;36.0.0" 2>&1 | tail -3
+      - name: Build the library (release AAR)
+        working-directory: src/examples/llama.android
+        run: |
+          if [ -x ./gradlew ]; then ./gradlew --no-daemon :lib:assembleRelease 2>&1 | tail -40; else gradle --no-daemon :lib:assembleRelease 2>&1 | tail -40; fi
+      - name: Report what was built
+        working-directory: src/examples/llama.android
+        run: |
+          f=$(find . -name "*.aar" | head -1); echo "::notice title=LLAMA-AAR::$f $(du -h $f | cut -f1)"
+          echo "::notice title=LLAMA-AAR-CONTENT::$(unzip -l $f | awk '{print $1, $4}' | grep -E '\.so|classes' | tr '\n' ';' | cut -c1-3000)"
