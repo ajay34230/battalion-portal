@@ -10,6 +10,7 @@ jobs:
   hashes:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Hugging Face LFS hashes, sizes and gating check
         run: |
           python3 - <<'PY'
