@@ -32,3 +32,5 @@ Everything below that touches hardware, the lock screen, audio or a downloaded m
 - Android requires you to tap Allow for every permission and to switch on Notification access yourself; VISION can only open the right screen.
 
 - **Model speed.** Models run on the CPU unless the GPU path works on your phone (Settings → GPU, on by default, automatic CPU fallback). Gemma 4 E2B on a Snapdragon 870 CPU is slow; GPU speed-up is unverified on your iQOO 7. Smaller models (Qwen3 1.7B, Qwen3.5 2B) are much faster than Gemma 4 on CPU.
+
+- **Reply speed.** Even on GPU a 2B+ model on a Snapdragon 870 is slower than Google's published numbers (those are for a Galaxy S26 Ultra). Every non-command message costs a prompt read + the answer. Clear commands (open app, time, reminders, spending...) skip the model. For fast chat use Qwen3 1.7B, Qwen3.5 2B or smaller.

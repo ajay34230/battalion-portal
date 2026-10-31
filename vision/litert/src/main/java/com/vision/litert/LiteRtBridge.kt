@@ -21,6 +21,7 @@ class LiteRtBridge {
         gpuError = null
         if (tryGpu) {
             try {
+                enableSpeculativeDecoding()
                 val cfg = if (vision) EngineConfig(modelPath = modelPath, backend = Backend.GPU(), visionBackend = Backend.GPU(), cacheDir = cacheDir)
                 else EngineConfig(modelPath = modelPath, backend = Backend.GPU(), cacheDir = cacheDir)
                 val e = Engine(cfg); e.initialize(); engine = e
@@ -34,6 +35,17 @@ class LiteRtBridge {
         e.initialize()
         engine = e; backendName = "CPU"
     }
+
+    /** Multi-token prediction: Google recommends it on GPU (faster replies). Set by reflection so an older library simply ignores it. */
+    private fun enableSpeculativeDecoding() {
+        try {
+            val c = Class.forName("com.google.ai.edge.litertlm.ExperimentalFlags")
+            val inst = c.getField("INSTANCE").get(null)
+            c.getMethod("setEnableSpeculativeDecoding", Boolean::class.javaPrimitiveType).invoke(inst, true)
+            speculative = true
+        } catch (_: Throwable) { speculative = false }
+    }
+    var speculative = false; private set
 
     fun generate(system: String, prompt: String): String {
         val e = engine ?: error("Model not loaded")

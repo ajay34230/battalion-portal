@@ -54,8 +54,8 @@ class Orchestrator(private val app: VisionApp) {
         }
         // Short, unambiguous commands skip the model entirely: instant answer, no battery/RAM cost.
         val ruleIntent = IntentParser.parse(userText)
-        // With a real model loaded the MODEL understands the request (any wording, any language); the rule parser is only used for trivially safe commands or when the model's answer is unusable.
-        val fast = isFastCommand(ruleIntent) && (!engine.isNeuralModelLoaded || isTrivial(ruleIntent))
+        // Clear commands the rule parser recognises run instantly (no model call = fast). Everything else goes to the model, which understands any wording or language in ONE call.
+        val fast = isFastCommand(ruleIntent)
         val plan = if (fast) null else try { engine.plan(userText) } catch (_: Throwable) { null }
         val intent = if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
 
