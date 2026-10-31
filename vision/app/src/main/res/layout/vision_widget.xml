@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="14dp" android:background="@drawable/widget_bg">
+    <TextView android:id="@+id/widget_brand" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="V I S I O N" android:textColor="#FF00E5FF" android:textSize="11sp" android:letterSpacing="0.2" />
+    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="6dp" android:text="Nothing coming up" android:textColor="#FFE6F3FF" android:textSize="17sp" android:maxLines="2" android:ellipsize="end" />
+    <TextView android:id="@+id/widget_when" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Tap to talk to VISION" android:textColor="#FF8FA8C4" android:textSize="12sp" android:maxLines="1" />
+</LinearLayout>

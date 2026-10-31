@@ -164,6 +164,7 @@ object ReminderScheduler {
 
     /** Schedules the day-of alert plus every advance notice (e.g. 3 and 1 day before a bill). WorkManager survives restarts and reboots; delivery can drift a few minutes under Doze. */
     fun scheduleTask(ctx: Context, t: TaskItem) {
+        com.vision.assistant.VisionWidget.refresh(ctx)
         val due = t.dueAt ?: return
         val leads = (t.leadDays.split(',').mapNotNull { it.trim().toIntOrNull() }.filter { it > 0 } + 0).distinct()
         for (l in leads) {

@@ -98,6 +98,13 @@ fun SettingsScreen(app: VisionApp, back: () -> Unit) {
         Text("Search", style = MaterialTheme.typography.titleMedium, color = VisionColors.Cyan)
         Text("Optional SearXNG server (must have JSON output enabled). Empty = Wikipedia.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(searx, { searx = it }, Modifier.fillMaxWidth(), label = { Text("SearXNG URL") }, singleLine = true)
+        var wake by remember { mutableStateOf(Prefs.wakeWord(ctx)) }
+        val micOk = ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val voskOk = remember { com.vision.assistant.core.Downloads.manager(app).voskDir("vosk-small-en-us") != null }
+        ToggleRow("Hands-free “Hey Vision” (experimental)", "Keeps the microphone open (visible notification) so a small offline model can hear “Hey Vision”. Nothing is recorded or sent. Uses battery. " +
+            if (!micOk) "Needs the microphone permission first." else if (!voskOk) "Needs the offline English voice model (More → Models & downloads)." else "Say “Hey Vision”, wait for “Yes?”, then speak.", wake, enabled = micOk && voskOk) {
+            wake = it; Prefs.setWakeWord(ctx, it); if (it) com.vision.assistant.service.WakeWordService.start(ctx) else com.vision.assistant.service.WakeWordService.stop(ctx)
+        }
         var phoneVoice by remember { mutableStateOf(Prefs.phoneVoice(ctx)) }
         ToggleRow("Use my phone's built-in voice", "Talk using the speech recogniser and voice already on your phone (Google/vivo). Turn off to use VISION's downloaded offline model instead.", phoneVoice) { phoneVoice = it; Prefs.setPhoneVoice(ctx, it) }
         Text("Optional Brave Search API key (free at brave.com/search/api) for better web results. Without any key VISION uses DuckDuckGo + Wikipedia.", style = MaterialTheme.typography.bodySmall)

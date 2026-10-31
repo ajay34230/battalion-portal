@@ -88,8 +88,16 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
         <receiver android:name=".tasks.ReminderActionReceiver" android:exported="false" />
+        <receiver android:name=".VisionWidget" android:exported="false" android:label="VISION">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/vision_widget_info" />
+        </receiver>
         <receiver android:name=".core.DownloadActionReceiver" android:exported="false" />
         <receiver android:name=".termux.TermuxResultReceiver" android:exported="false" />
+        <service
+            android:name=".service.WakeWordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
         <service
             android:name=".service.VoiceService"
             android:exported="false"

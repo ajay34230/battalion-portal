@@ -46,6 +46,13 @@ class ToolRegistry(private val app: VisionApp) {
                 if (!com.vision.assistant.comms.CalendarReader.hasPermission(app)) ToolResult.NeedsPermission(com.vision.assistant.comms.CalendarReader.PERMISSION, Say.plain("I need permission to read your calendar."))
                 else { val ev = com.vision.assistant.comms.CalendarReader.upcoming(app, intent.days); ToolResult.Success(Say.plain(com.vision.assistant.comms.CalendarReader.format(if (intent.days == 2) ev.filter { it.begin >= startOfTomorrow() } else ev, intent.days))) }
             }
+            is Intent.Spending -> {
+                val cal = java.util.Calendar.getInstance().apply { set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+                    when (intent.period) { "week" -> add(java.util.Calendar.DAY_OF_YEAR, -6); "month" -> set(java.util.Calendar.DAY_OF_MONTH, 1); "year" -> set(java.util.Calendar.DAY_OF_YEAR, 1) } }
+                val rows = app.database.payments().since(cal.timeInMillis).map { com.vision.assistant.finance.SpendSummary.Row(com.vision.assistant.finance.Direction.valueOf(it.direction), it.paise, it.party, it.bill, it.category) }
+                val label = when (intent.period) { "today" -> "Today"; "week" -> "Last 7 days"; "year" -> "This year"; else -> "This month" }
+                ToolResult.Success(Say.plain(com.vision.assistant.finance.SpendSummary.describe(label, com.vision.assistant.finance.SpendSummary.totals(rows))))
+            }
             is Intent.RunRoutine -> {
                 val r = com.vision.assistant.tasks.Routines.find(app, intent.name)
                 if (r == null) ToolResult.Failure(Say.plain("I don't have a routine called \"${intent.name}\". Create one in More → Routines."))

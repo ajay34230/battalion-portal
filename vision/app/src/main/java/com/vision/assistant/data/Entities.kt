@@ -53,3 +53,11 @@ data class NotificationLog(
     val sensitive: Boolean,
     val createdAt: Long = System.currentTimeMillis(),
 )
+
+@androidx.room.Entity(tableName = "payment_record")
+data class PaymentRecord(
+    @androidx.room.PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val direction: String, val paise: Long, val party: String, val bill: Boolean, val source: String,
+    val category: String = "", val place: String = "", val confirmed: Boolean = false,
+    val at: Long = System.currentTimeMillis(),
+)

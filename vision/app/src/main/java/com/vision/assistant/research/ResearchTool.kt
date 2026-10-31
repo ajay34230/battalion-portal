@@ -22,6 +22,8 @@ object Prefs {
     /** true (default): talk with the phone's own speech recogniser and voice. false: VISION's downloaded offline Vosk model, if installed. */
     fun phoneVoice(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("phone_voice", true)
     fun setPhoneVoice(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("phone_voice", v).apply()
+    fun wakeWord(ctx: Context): Boolean = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getBoolean("wake_word", false)
+    fun setWakeWord(ctx: Context, v: Boolean) = ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).edit().putBoolean("wake_word", v).apply()
     fun braveKey(ctx: Context): String =
         ctx.getSharedPreferences("vision_prefs", Context.MODE_PRIVATE).getString("brave_key", "") ?: ""
     fun setBraveKey(ctx: Context, v: String) =

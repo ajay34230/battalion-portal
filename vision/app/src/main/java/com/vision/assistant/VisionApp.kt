@@ -16,6 +16,7 @@ class VisionApp : Application() {
         com.vision.assistant.health.CrashLog.install(this)
         com.vision.assistant.tasks.ReminderScheduler.ensureChannels(this)
         try { com.vision.assistant.tasks.Routines.scheduleAll(this) } catch (_: Throwable) {}
+        try { com.vision.assistant.finance.PaymentReview.schedule(this) } catch (_: Throwable) {}
         // Load an installed language model in the background so the first reply is not slow.
         appScope.launch {
             // VISION always knows who built it.

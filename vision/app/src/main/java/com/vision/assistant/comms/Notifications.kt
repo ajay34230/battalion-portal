@@ -22,6 +22,17 @@ class VisionNotificationListener : NotificationListenerService() {
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
+        val whole = "$title $text"
+        if (com.vision.assistant.finance.PaymentParser.isCandidatePackage(sbn.packageName) || com.vision.assistant.finance.PaymentParser.looksLikeBankAlert(sbn.packageName, whole)) {
+            com.vision.assistant.finance.PaymentParser.parse(title, text)?.let { pay ->
+                val appRef = application as VisionApp
+                scope.launch {
+                    val dao = appRef.database.payments()
+                    if (dao.duplicates(pay.direction.name, pay.amountPaise, pay.party, System.currentTimeMillis() - 120_000) == 0)
+                        dao.insert(com.vision.assistant.data.PaymentRecord(direction = pay.direction.name, paise = pay.amountPaise, party = pay.party, bill = pay.bill, category = com.vision.assistant.finance.PaymentParser.suggestCategory(pay.party, pay.bill), source = sbn.packageName))
+                }
+            }
+        }
         val sensitive = (SensitiveText.isSensitive("$title $text") && !com.vision.assistant.privacy.LockPrefs.load(this).readSensitiveAloud) || Untrusted.looksLikeInjection(text)
         val app = application as VisionApp
         scope.launch {

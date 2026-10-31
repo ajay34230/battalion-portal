@@ -174,7 +174,7 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
 
     ScreenFrame(name, "${files.size} files" + if (dirty) " · unsaved" else "", action = { TextButton(onClick = { if (dirty) save(); onClose() }) { Text("Projects") } }) {
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(listOf("Files", "Editor", "Preview", "Run", "Ask VISION", "Tools", "History")) { t -> Pill(t, selected = tab == t) { tab = t } }
+            items(listOf("Files", "Editor", "Preview", "Visual test", "Run", "Ask VISION", "Tools", "Notes", "Terminal", "History")) { t -> Pill(t, selected = tab == t) { tab = t } }
         }
         if (status.isNotBlank()) Text(status, fontSize = 12.sp, color = VisionColors.Mint)
         when (tab) {
@@ -285,6 +285,9 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                 if (output.isNotBlank()) Text(output, fontSize = 13.sp)
             }
             "Tools" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { DevToolsPanel(app, studio, request, files) }
+            "Visual test" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { VisualTestPanel(studio, name, files) }
+            "Notes" -> NotesTab(studio, name, Modifier.weight(1f))
+            "Terminal" -> TerminalTab(studio, Modifier.weight(1f))
             else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { if (dirty) save(); store.snapshot(name, "Manual snapshot"); reload(); status = "Snapshot saved." }) { Text("Save snapshot") }
@@ -297,6 +300,17 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                         TextButton(onClick = { if (store.rollback(name, s.id)) { studio.log("Rolled back '$name' to ${s.label}"); openFile = null; reload(); status = "Restored." } }) { Text("Restore") }
                     }
                 }
+                SectionLabel("Git (runs in Termux, Advanced mode, you confirm each action)")
+                var commitMsg by remember { mutableStateOf("") }
+                OutlinedTextField(commitMsg, { commitMsg = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Commit message") })
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { if (dirty) save(); confirmRun = "git init + first commit" to TermuxRunner.Git.initialCommit(commitMsg) }) { Text("Init + commit") }
+                    OutlinedButton(onClick = { if (dirty) save(); confirmRun = "git commit" to TermuxRunner.Git.addCommit(commitMsg) }) { Text("Commit") }
+                    OutlinedButton(onClick = { if (dirty) save(); confirmRun = "git status" to TermuxRunner.Git.STATUS }) { Text("Status") }
+                    OutlinedButton(onClick = { if (dirty) save(); confirmRun = "git log" to TermuxRunner.Git.LOG }) { Text("Log") }
+                    OutlinedButton(onClick = { if (dirty) save(); confirmRun = "git diff" to TermuxRunner.Git.DIFF }) { Text("Changes") }
+                }
+                if (output.isNotBlank()) Text(output, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                 SectionLabel("Activity log")
                 Text(studio.readLog().ifBlank { "(empty)" }, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             }
@@ -313,7 +327,7 @@ private fun ProjectView(app: VisionApp, studio: CodeStudio, name: String, onClos
                     confirmRun = null; busy = true; output = ""
                     scope.launch {
                         val data = store.files(name).filter { it.length < 120 }.associateWith { store.read(name, it).orEmpty() }
-                        val script = TermuxRunner.script(ProjectStore.slug(name), data, cmd)
+                        val script = if (cmd.startsWith("git ")) TermuxRunner.gitScript(ProjectStore.slug(name), data, cmd) else TermuxRunner.script(ProjectStore.slug(name), data, cmd)
                         if (script == null) output = "Project is too large to send to Termux in one command (limit ~90 KB)."
                         else {
                             studio.log("Run in Termux: $name/$file")

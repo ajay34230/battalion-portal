@@ -51,3 +51,15 @@ interface NotificationDao {
     @Query("DELETE FROM notification_log WHERE id NOT IN (SELECT id FROM notification_log ORDER BY id DESC LIMIT 100)") suspend fun trim()
     @Query("DELETE FROM notification_log") suspend fun clear()
 }
+
+@Dao
+interface PaymentDao {
+    @Insert suspend fun insert(p: PaymentRecord): Long
+    @Query("SELECT * FROM payment_record WHERE at >= :since ORDER BY at DESC") suspend fun since(since: Long): List<PaymentRecord>
+    @Query("SELECT * FROM payment_record ORDER BY at DESC LIMIT :n") suspend fun recent(n: Int): List<PaymentRecord>
+    @Query("SELECT COUNT(*) FROM payment_record WHERE direction=:d AND paise=:p AND party=:who AND at >= :since") suspend fun duplicates(d: String, p: Long, who: String, since: Long): Int
+    @Query("UPDATE payment_record SET category=:c, place=:pl, confirmed=1 WHERE id=:id") suspend fun confirm(id: Long, c: String, pl: String)
+    @Query("SELECT * FROM payment_record WHERE confirmed=0 AND direction='PAID' ORDER BY at DESC") suspend fun unconfirmed(): List<PaymentRecord>
+    @Query("DELETE FROM payment_record WHERE id=:id") suspend fun delete(id: Long)
+    @Query("DELETE FROM payment_record") suspend fun clear()
+}

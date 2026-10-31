@@ -13,6 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as VisionApp
+        if (com.vision.assistant.research.Prefs.wakeWord(this) && androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) com.vision.assistant.service.WakeWordService.start(this)
         setContent {
             VisionTheme { AuroraBackground { VisionNav(app) } }
         }

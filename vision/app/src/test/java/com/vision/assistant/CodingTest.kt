@@ -201,3 +201,24 @@ class BackupTest {
     }
     @Test fun rejectsForeignJson() = assertNull(com.vision.assistant.backup.Backup.parse("{\"app\":\"other\"}"))
 }
+
+class VisualAndGitTest {
+    @Test fun overflowIsReported() {
+        val f = com.vision.assistant.code.VisualCheck.interpret("""{"w":360,"sw":520,"wide":["img.hero"],"noAlt":1,"tiny":0,"smallTargets":2,"hasViewport":false,"blank":false}""", 360)
+        assertTrue(f.any { it.severity == "error" && it.text.contains("Sideways") && it.text.contains("img.hero") }); assertTrue(f.any { it.text.contains("viewport") })
+        assertTrue(f.any { it.text.contains("alt") }); assertTrue(f.any { it.text.contains("tap") })
+    }
+    @Test fun cleanPageHasNoFindings() = assertTrue(com.vision.assistant.code.VisualCheck.interpret("""{"w":412,"sw":412,"wide":[],"noAlt":0,"tiny":0,"smallTargets":0,"hasViewport":true,"blank":false}""", 412).isEmpty())
+    @Test fun badReportIsAnError() = assertEquals("error", com.vision.assistant.code.VisualCheck.interpret("not json", 360).first().severity)
+    @Test fun inkRatio() { assertEquals(0.0, com.vision.assistant.code.VisualCheck.inkRatio(IntArray(100) { 7 }), 1e-9); assertTrue(com.vision.assistant.code.VisualCheck.inkRatio(IntArray(100) { if (it < 20) 1 else 7 }) > 0.19) }
+    @Test fun commitMessageCannotInjectShell() {
+        val c = TermuxRunner.Git.commit("fix'; rm -rf ~ #`whoami`$(id)")
+        assertFalse(c.contains(";  rm")); assertFalse(c.contains("`")); assertFalse(c.contains("$(")); assertTrue(c.contains("-m '"))
+        assertTrue(TermuxRunner.Git.commit("").contains("Update from VISION"))
+    }
+    @Test fun gitScriptKeepsRepoAndStartsWithGit() {
+        val s = TermuxRunner.gitScript("demo", mapOf("a.txt" to "x"), TermuxRunner.Git.STATUS)!!
+        assertTrue(s.contains("-path ./.git -prune")); assertFalse(s.contains("rm -rf")); assertTrue(s.endsWith("git status --short --branch"))
+    }
+    @Test fun branchNameIsSanitised() = assertFalse(TermuxRunner.Git.branch("x; reboot").contains(";"))
+}

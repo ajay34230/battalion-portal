@@ -21,6 +21,7 @@ sealed interface Intent {
     data class See(val question: String, val document: Boolean) : Intent
     /** Read upcoming calendar events for the next [days] days. */
     data class Calendar(val days: Int) : Intent
+    data class Spending(val period: String) : Intent
     data class RunRoutine(val name: String) : Intent
     data object ReadEmail : Intent
     data object AskTime : Intent
@@ -52,6 +53,8 @@ object IntentParser {
         Regex("^(?:run|start|do|chalao|shuru karo)\\s+(?:the\\s+)?(.+?)\\s+routine$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
         Regex("^(?:run|start)\\s+routine\\s+(.+)$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
         Regex("^(.+?)\\s+routine\\s+(?:chalao|shuru karo|run karo)$").find(l)?.let { return Intent.RunRoutine(it.groupValues[1].trim()) }
+        if (Regex("(how much|kitna).*(spen[dt]|paid|kharch|received|mila)|spending|expenses?|kharch(a|e)?\\b|payment summary|money (spent|received)|paise (kharch|mile)|खर्च|कितना.*(खर्च|दिया)").containsMatchIn(l))
+            return Intent.Spending(if (Regex("today|aaj|आज").containsMatchIn(l)) "today" else if (Regex("week|hafte|हफ्ते").containsMatchIn(l)) "week" else if (Regex("year|saal|साल").containsMatchIn(l)) "year" else "month")
         if (Regex("my (calendar|schedule|agenda)|what'?s on (my )?(calendar|today|tomorrow)|events (today|tomorrow)|aaj ka schedule|kal ka schedule|calendar (mein|me) kya|मेरा कैलेंडर|आज का शेड्यूल").containsMatchIn(l))
             return Intent.Calendar(if (Regex("week|hafte|हफ्ते").containsMatchIn(l)) 7 else if (Regex("tomorrow|kal|कल").containsMatchIn(l)) 2 else 1)
         com.vision.assistant.tasks.EventParser.parse(t)?.let { return Intent.SetEvent(it.kind.id, it.title, it.month, it.day, it.monthly, it.lang) }
