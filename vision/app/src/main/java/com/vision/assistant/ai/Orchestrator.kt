@@ -13,6 +13,9 @@ data class AgentReply(
     val confirm: ToolResult.NeedsConfirmation? = null,
     val needsPermission: String? = null,
     val needsUnlock: Boolean = false,
+    /** Set when the user must pick/take an image (or choose a PDF when [needsDocument]) for this question. */
+    val needsImage: String? = null,
+    val needsDocument: Boolean = false,
 )
 
 class Orchestrator(private val app: VisionApp) {
@@ -40,6 +43,11 @@ class Orchestrator(private val app: VisionApp) {
             AgentReply(Say("That is turned off while the phone is locked (see Settings).", "Locked phone par yeh band hai (Settings dekhein).", "फ़ोन लॉक होने पर यह बंद है (सेटिंग्स देखें)।").`in`(lang), lang)
         } else if (locked && LockPolicy.needsUnlock(intent)) {
             AgentReply(Say("Unlock your phone to continue.", "Aage badhne ke liye phone unlock kijiye.", "आगे बढ़ने के लिए फ़ोन अनलॉक कीजिए।").`in`(lang), lang, needsUnlock = true)
+        } else if (intent is Intent.See) {
+            AgentReply(
+                Say("Take a photo or choose ${if (intent.document) "a PDF" else "an image"} and I'll look at it.", "${if (intent.document) "PDF" else "Image"} chuniye ya photo kheeniye, main dekhta hoon.", "${if (intent.document) "PDF" else "तस्वीर"} चुनिए या फ़ोटो लीजिए, मैं देखता हूँ।").`in`(lang),
+                lang, needsImage = intent.question, needsDocument = intent.document,
+            )
         } else if (intent is Intent.Chat) {
             val text = plan?.reply ?: run {
                 val history = db.chat().recent(10).reversed().dropLast(1).map { ChatTurn(it.role, it.text) }
@@ -57,7 +65,7 @@ class Orchestrator(private val app: VisionApp) {
     }
 
     private fun isFastCommand(i: Intent) = when (i) {
-        is Intent.Termux, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
+        is Intent.Termux, is Intent.See, Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
         is Intent.OpenApp -> i.app.trim().split(Regex("\\s+")).size <= 3
         is Intent.Call -> i.contact.trim().split(Regex("\\s+")).size <= 3
         else -> false

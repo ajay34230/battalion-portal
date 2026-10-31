@@ -67,6 +67,9 @@ dependencies {
     kapt("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.21") // Room bundles an older reader that rejects Kotlin 2.4 metadata
 
     implementation("org.jsoup:jsoup:1.18.1")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
+    implementation("com.google.mlkit:image-labeling:17.0.9")
     implementation(project(":litert"))
     implementation("com.alphacephei:vosk-android:0.3.47")
     implementation("net.java.dev.jna:jna:5.13.0@aar")

@@ -19,6 +19,7 @@ data class ResourceEntry(
     val license: String,
     val languages: String,
     val note: String = "",
+    val multimodal: Boolean = false,
 ) {
     val sizeMb: Long get() = sizeBytes / 1_048_576
 }
@@ -58,6 +59,18 @@ object ResourceManifest {
             "$HF/Qwen3.5-4B/resolve/main/Qwen3.5-4B_mixed_int4.litertlm", "Qwen3.5-4B_mixed_int4.litertlm",
             "7243c33c9c6192150ab6da7ac13a9efdc24ff1a653eabc93b2757de4b44b012a", 2_754_070_624, 6_500,
             "Apache-2.0", "multilingual (incl. Hindi)", "For 8 GB+ phones such as iQOO 7. Published benchmark: about 6 tokens/s on an 8 GB Pixel 8a CPU, ~4.4 GB peak memory. Text only.",
+        ),
+        ResourceEntry(
+            "gemma4-e2b", ResourceKind.LLM, "Gemma 4 E2B — language + image understanding",
+            "$HF/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm", "gemma-4-E2B-it.litertlm",
+            "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c", 2_588_147_712, 6_000,
+            "Apache-2.0", "multilingual", "Can look at photos. Published guidance: 6 GB+ RAM. Unverified on real phones.", multimodal = true,
+        ),
+        ResourceEntry(
+            "gemma4-e4b", ResourceKind.LLM, "Gemma 4 E4B — stronger language + image understanding",
+            "$HF/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm", "gemma-4-E4B-it.litertlm",
+            "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0", 3_659_530_240, 7_000,
+            "Apache-2.0", "multilingual", "Can look at photos. Published guidance: 8 GB+ RAM. Large download. Unverified on real phones.", multimodal = true,
         ),
         ResourceEntry(
             "vosk-small-en-us", ResourceKind.STT, "Vosk small English (US) — offline speech",

@@ -10,6 +10,8 @@ interface LlmEngine {
     /** Neural engines understand the request themselves; the rule-based engine returns null. */
     suspend fun plan(userText: String): Plan? = null
     /** Summarises untrusted source material for a question. Null = engine can't (caller uses an extractive summary). */
+    /** Looks at a photo with a multimodal model. Null = this engine can't see images. */
+    suspend fun describeImage(imagePath: String, question: String, lang: Lang): String? = null
     suspend fun summarize(query: String, material: String, lang: Lang): String? = null
 }
 

@@ -34,6 +34,9 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
     val permission = MutableStateFlow<String?>(null)
     /** Text waiting for the owner to unlock the phone. */
     val unlock = MutableStateFlow<String?>(null)
+    /** Set when the user must pick or take an image (question, isDocument). */
+    val imageRequest = MutableStateFlow<Pair<String, Boolean>?>(null)
+    private val see by lazy { com.vision.assistant.vision.SeeTool(app) }
     var hindiMic = false
     var speakReplies = true
 
@@ -57,6 +60,7 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
         pending.value = if (r.confirm != null) r else null
         permission.value = r.needsPermission
         if (r.needsUnlock) unlock.value = original
+        imageRequest.value = r.needsImage?.let { it to r.needsDocument }
         orb.value = OrbState.IDLE
         if (speakReplies && r.confirm == null) {
             if (speaker.speak(r.text, r.lang)) orb.value = OrbState.SPEAKING
@@ -84,6 +88,22 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
             onText = { send(it) }, onError = { orb.value = OrbState.IDLE; level.value = 0f; status.value = it },
             onLevel = { level.value = it },
         )
+    }
+
+    /** Looks at a photo, or reads a PDF when [document], and answers [question]. */
+    fun analyze(uri: android.net.Uri, question: String, document: Boolean) {
+        imageRequest.value = null
+        heard.value = (if (document) "📄 " else "📷 ") + question.ifBlank { if (document) "Summarise this document" else "What is this?" }
+        reply.value = ""; status.value = ""; orb.value = OrbState.THINKING
+        scope.launch {
+            val lang = LanguageDetector.detect(question)
+            val text = try {
+                if (document) see.readPdf(uri, question, lang) else see.describeImage(uri, question, lang)
+            } catch (t: Throwable) { "I couldn't analyse that: ${t.message}" }
+            app.database.chat().insert(com.vision.assistant.data.ChatMessage(role = "user", text = heard.value, lang = lang.code))
+            app.database.chat().insert(com.vision.assistant.data.ChatMessage(role = "assistant", text = text, lang = lang.code))
+            deliver(AgentReply(text, lang), "")
+        }
     }
 
     fun stopListening() { stt.stop(); vosk?.stop(); level.value = 0f; if (orb.value == OrbState.LISTENING) orb.value = OrbState.IDLE }

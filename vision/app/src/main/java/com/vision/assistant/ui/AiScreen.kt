@@ -93,6 +93,18 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
     }
     val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { session.permission.value = null }
 
+    val imageRequest by session.imageRequest.collectAsState()
+    var seeQuestion by remember { mutableStateOf("") }
+    var camUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val takePic = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) camUri?.let { session.analyze(it, seeQuestion, false) } else session.imageRequest.value = null }
+    val pickImg = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> if (uri != null) session.analyze(uri, seeQuestion, false) else session.imageRequest.value = null }
+    val pickDoc = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) session.analyze(uri, seeQuestion, true) else session.imageRequest.value = null }
+    fun camera(q: String) {
+        seeQuestion = q
+        val f = java.io.File(ctx.cacheDir, "cam-${System.currentTimeMillis()}.jpg")
+        val u = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
+        camUri = u; takePic.launch(u)
+    }
     fun startMic() {
         if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micLauncher.launch(Manifest.permission.RECORD_AUDIO)
         else session.listen()
@@ -122,6 +134,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
                 }
                 if (status.isNotBlank()) Text(status, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, textAlign = TextAlign.Center)
                 ConfirmBar(pending, session)
+                SeeCard(imageRequest, onCamera = { camera(it) }, onImage = { seeQuestion = it; pickImg.launch("image/*") }, onDoc = { seeQuestion = it; pickDoc.launch(arrayOf("application/pdf")) }, onCancel = { session.imageRequest.value = null })
                 permission?.let { p -> Button(onClick = { permLauncher.launch(p) }) { Text("Grant permission, then ask again") } }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = !hindi, onClick = { hindi = false }, label = { Text("English") })
@@ -156,7 +169,13 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
         }
         if (status.isNotBlank()) Text(status, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
         ConfirmBar(pending, session)
+        SeeCard(imageRequest, onCamera = { camera(it) }, onImage = { seeQuestion = it; pickImg.launch("image/*") }, onDoc = { seeQuestion = it; pickDoc.launch(arrayOf("application/pdf")) }, onCancel = { session.imageRequest.value = null })
         permission?.let { p -> Button(onClick = { permLauncher.launch(p) }) { Text("Grant permission, then ask again") } }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = false, onClick = { camera(input); input = "" }, label = { Text("📷 Camera") })
+            FilterChip(selected = false, onClick = { seeQuestion = input; input = ""; pickImg.launch("image/*") }, label = { Text("🖼 Image") })
+            FilterChip(selected = false, onClick = { seeQuestion = input; input = ""; pickDoc.launch(arrayOf("application/pdf")) }, label = { Text("📄 PDF") })
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = !hindi, onClick = { hindi = false }, label = { Text("Mic: English") })
             FilterChip(selected = hindi, onClick = { hindi = true }, label = { Text("Mic: हिंदी") })
@@ -177,6 +196,21 @@ private fun ConfirmBar(pending: com.vision.assistant.ai.AgentReply?, session: As
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { session.confirm(true) }) { Text("Confirm") }
                 OutlinedButton(onClick = { session.confirm(false) }) { Text("Cancel") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeeCard(request: Pair<String, Boolean>?, onCamera: (String) -> Unit, onImage: (String) -> Unit, onDoc: (String) -> Unit, onCancel: () -> Unit) {
+    AnimatedVisibility(request != null, enter = fadeIn(tween(500)), exit = fadeOut(tween(300))) {
+        val (q, doc) = request ?: ("" to false)
+        Column(Modifier.fillMaxWidth().glass(18).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (doc) "Choose the PDF to read" else "Show me something")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (doc) Button(onClick = { onDoc(q) }) { Text("Choose PDF") }
+                else { Button(onClick = { onCamera(q) }) { Text("Take photo") }; OutlinedButton(onClick = { onImage(q) }) { Text("Choose image") } }
+                OutlinedButton(onClick = onCancel) { Text("Cancel") }
             }
         }
     }

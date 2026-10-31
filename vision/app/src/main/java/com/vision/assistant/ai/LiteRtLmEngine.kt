@@ -9,14 +9,14 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** On-device language model via Google's LiteRT-LM (CPU backend: works on any 64-bit ARM phone). */
-class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, label: String) : LlmEngine {
+class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, label: String, val multimodal: Boolean = false, private val noThink: Boolean = true) : LlmEngine {
     override val name = label
     override val isNeuralModelLoaded = true
     private val bridge = LiteRtBridge()
     private val lock = Mutex()
 
     suspend fun load() = withContext(Dispatchers.IO) {
-        bridge.load(modelFile.absolutePath, ctx.cacheDir.path)
+        bridge.load(modelFile.absolutePath, ctx.cacheDir.path, vision = multimodal)
     }
 
     fun close() = bridge.close()
@@ -24,7 +24,18 @@ class LiteRtLmEngine(private val ctx: Context, private val modelFile: File, labe
     private suspend fun generate(system: String, prompt: String): String = lock.withLock {
         withContext(Dispatchers.IO) {
             // "/no_think" turns off Qwen3's long reasoning so replies stay fast.
-            LlmText.clean(bridge.generate(system, "$prompt /no_think"))
+            LlmText.clean(bridge.generate(system, if (noThink) "$prompt /no_think" else prompt))
+        }
+    }
+
+    override suspend fun describeImage(imagePath: String, question: String, lang: Lang): String? {
+        if (!multimodal) return null
+        val langName = when (lang) { Lang.HI -> "Hindi (Devanagari)"; Lang.HINGLISH -> "Hinglish (Hindi in Latin letters)"; Lang.EN -> "English" }
+        val system = "${Identity.PROMPT_LINE} Look carefully at the image and answer in $langName, plainly and honestly. If you cannot tell, say so. Read any visible text exactly."
+        return lock.withLock {
+            withContext(Dispatchers.IO) {
+                try { LlmText.clean(bridge.generateWithImage(system, question.ifBlank { "Describe this image." }, imagePath)).takeIf { it.isNotBlank() } } catch (_: Throwable) { null }
+            }
         }
     }
 

@@ -45,7 +45,7 @@ class ToolRegistry(private val app: VisionApp) {
                 "Gmail isn't connected. Sign-in needs a Google OAuth client that hasn't been set up in this build.",
                 "Gmail connected nahi hai. Sign-in ke liye Google OAuth client chahiye jo is build mein set nahi hai.",
                 "Gmail जुड़ा नहीं है। साइन-इन के लिए Google OAuth क्लाइंट चाहिए जो इस बिल्ड में सेट नहीं है।"))
-            is Intent.Chat -> ToolResult.Failure(Say("no tool"))
+            is Intent.See, is Intent.Chat -> ToolResult.Failure(Say("no tool"))
         }
     }
 

@@ -14,6 +14,8 @@ sealed interface Intent {
     data class WhatsAppDraft(val text: String) : Intent
     data class ReadNotifications(val whatsappOnly: Boolean) : Intent
     data class Termux(val line: String) : Intent
+    /** Look at a photo (or read a PDF when [document]) and answer [question]. */
+    data class See(val question: String, val document: Boolean) : Intent
     data object ReadEmail : Intent
     data object AskTime : Intent
     data object AskBattery : Intent
@@ -56,6 +58,8 @@ object IntentParser {
 
         Regex("^(?:termux|run in termux|run command|terminal)\\s+(.+)$", RegexOption.IGNORE_CASE).find(t)?.let { return Intent.Termux(it.groupValues[1].trim()) }
         val home = CommandPolicy.HOME
+        if (Regex("(summari[sz]e|read|explain|padho|summary).{0,20}(pdf|document|doc file)|(pdf|document) (padho|summari[sz]e|ka summary)").containsMatchIn(l)) return Intent.See(t, true)
+        if (Regex("what do you see|what is this|what('s| is) in (this|the) (photo|picture|image)|describe (this|the) (photo|picture|image)|read (this|the) (text|image|photo|board|sign)|scan this|identify this|yeh kya hai|ye kya hai|is photo mein|photo (mein|me) kya|text padho|isme kya likha").containsMatchIn(l)) return Intent.See(t, false)
         if (Regex("torch|flash ?light|टॉर्च").containsMatchIn(l)) {
             val on = Regex("\\bon\\b|jala|chalu|start|चालू|जला").containsMatchIn(l)
             val off = Regex("\\boff\\b|band|bujha|stop|बंद|बुझा").containsMatchIn(l)

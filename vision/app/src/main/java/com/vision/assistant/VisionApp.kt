@@ -25,6 +25,12 @@ class VisionApp : Application() {
         }
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // 15 = running critically low; >= 60 = our process is a candidate to be killed. Free the model so Android keeps VISION alive.
+        if (level == 15 || level >= 60) appScope.launch { try { engines.unload() } catch (_: Throwable) {} }
+    }
+
     val database: VisionDatabase by lazy { VisionDatabase.build(this) }
     val deviceProfile: DeviceProfile by lazy { DeviceProfiler(this).profile() }
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
