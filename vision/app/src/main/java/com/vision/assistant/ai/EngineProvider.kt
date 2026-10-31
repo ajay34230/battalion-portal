@@ -66,10 +66,11 @@ class EngineProvider(private val app: VisionApp) {
             if (currentId == entry.id && current != null) return current!!
             (current as? LiteRtLmEngine)?.close()
             label.value = "Loading ${entry.title}…"
-            val useGpu = com.vision.assistant.research.Prefs.useGpu(app) && entry.id !in (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet())
+            val useGpu = com.vision.assistant.research.Prefs.useGpu(app) && entry.id.startsWith("gemma") && entry.id !in (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet())
             prefs.edit().putString("loading", entry.id).also { if (useGpu) it.putString("loading_gpu", entry.id) }.commit()
             try {
                 val e = LiteRtLmEngine(app, Downloads.manager(app).file(entry), entry.title, multimodal = entry.multimodal, noThink = entry.id.startsWith("qwen"))
+                e.onStall = { abandon(entry.id) }
                 e.load(tryGpu = useGpu)
                 prefs.edit().remove("loading").remove("loading_gpu").apply()
                 current = e; currentId = entry.id; lastError = null
@@ -86,6 +87,15 @@ class EngineProvider(private val app: VisionApp) {
         }
       }
       return null
+    }
+
+    /** Throws the current engine away (it is stuck or the user stopped it). The next question builds a fresh one, on the CPU for this model. */
+    fun abandon(id: String? = currentId) {
+        val old = current; val oid = id
+        current = null; currentId = null
+        if (oid != null) prefs.edit().putStringSet("gpu_bad", (prefs.getStringSet("gpu_bad", emptySet()) ?: emptySet()) + oid).apply()
+        label.value = "Model reset after a stall; reloading on the CPU…"
+        Thread { try { (old as? LiteRtLmEngine)?.close() } catch (_: Throwable) {} }.start()
     }
 
     /** Called after a model download finishes or a model is deleted. */

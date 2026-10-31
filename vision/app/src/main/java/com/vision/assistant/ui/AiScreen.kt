@@ -60,7 +60,7 @@ import com.vision.assistant.ai.OrbState
 private fun orbCaption(s: OrbState) = when (s) {
     OrbState.IDLE -> "Tap the orb to speak"
     OrbState.LISTENING -> "Listening…"
-    OrbState.THINKING -> "Thinking…"
+    OrbState.THINKING -> "Thinking… tap to stop"
     OrbState.SPEAKING -> "Speaking — tap to stop"
 }
 
@@ -108,7 +108,7 @@ fun AiScreen(app: VisionApp, overlay: Boolean, autoListen: Boolean, onUnlockRequ
         if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micLauncher.launch(Manifest.permission.RECORD_AUDIO)
         else session.listen()
     }
-    fun orbTap() = when (orb) { OrbState.LISTENING -> session.stopListening(); OrbState.SPEAKING -> session.stopSpeaking(); OrbState.IDLE -> startMic(); OrbState.THINKING -> Unit }
+    fun orbTap() = when (orb) { OrbState.LISTENING -> session.stopListening(); OrbState.SPEAKING -> session.stopSpeaking(); OrbState.IDLE -> startMic(); OrbState.THINKING -> session.cancelThinking() }
 
     LaunchedEffect(Unit) { app.engines.current() }
     LaunchedEffect(autoListen) { if (autoListen) startMic() }

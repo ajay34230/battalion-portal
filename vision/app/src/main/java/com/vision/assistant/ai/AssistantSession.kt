@@ -44,11 +44,21 @@ class AssistantSession(private val app: VisionApp, private val ctx: Context, pri
 
     private fun isLocked() = (ctx.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
 
+    private var job: kotlinx.coroutines.Job? = null
+
+    /** Stops waiting for a stuck or too-slow answer and resets the model. */
+    fun cancelThinking() {
+        job?.cancel(); job = null
+        app.engines.abandon()
+        orb.value = OrbState.IDLE; status.value = "Stopped. The model was reset and will reload on the CPU."
+    }
+
     fun send(text: String, forceUnlocked: Boolean = false) {
         if (text.isBlank()) return
+        if (orb.value == OrbState.THINKING) { status.value = "Still working on your last message. Tap the orb to stop it."; return }
         heard.value = text.trim(); status.value = ""; reply.value = ""; unlock.value = null
         orb.value = OrbState.THINKING
-        scope.launch {
+        job = scope.launch {
             val locked = !forceUnlocked && isLocked()
             val r = try { orchestrator.handle(text.trim(), locked, LockPrefs.load(ctx), recordUser = !forceUnlocked) } catch (t: Throwable) { AgentReply("Something went wrong: ${t.message}", Lang.EN) }
             deliver(r, text.trim())
