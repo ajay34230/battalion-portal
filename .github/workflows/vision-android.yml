@@ -23,10 +23,10 @@ jobs:
       - name: Unit tests and debug APK
         run: |
           set +e
-          gradle --no-daemon testDebugUnitTest assembleDebug 2>&1 | tee build.log
+          gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug 2>&1 | tee build.log
           code=${PIPESTATUS[0]}
           if [ $code -ne 0 ]; then
-            msg=$( (grep -B40 -m1 "Task .* FAILED" build.log; grep -E "^e: |What went wrong|Could not |Execution failed|FAILED|error:|bad class file" -A8 build.log) | head -200 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
+            msg=$( (grep -B40 -m1 "Task .* FAILED" build.log; grep -E "^e: |What went wrong|Could not |Execution failed|FAILED|error:|bad class file|Caused by" -A4 build.log) | head -200 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=GRADLE_ERRORS::$msg"
           else
             echo "::notice title=VISION::GRADLE_BUILD_AND_TESTS_OK"
