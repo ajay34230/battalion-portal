@@ -105,12 +105,21 @@ jobs:
           print('::notice title=LLAMA-ANDROID-TREE::'+' | '.join(p)[:3500])
           "
           echo "$tag" > tag.txt
-      - name: llama.cpp Android JNI sources
+      - name: llama.cpp Android library Kotlin API
         run: |
           tag=$(cat tag.txt)
-          base=https://raw.githubusercontent.com/ggml-org/llama.cpp/$tag/examples/llama.android/lib
-          for f in build.gradle.kts src/main/cpp/CMakeLists.txt; do
-            echo "::notice title=LLAMA-FILE $f::$(curl -sSf $base/$f | head -c 6000 | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read()))')"
+          curl -sSf "https://api.github.com/repos/ggml-org/llama.cpp/git/trees/$tag?recursive=1" | python3 -c "
+          import sys,json
+          t=json.load(sys.stdin)['tree']
+          p=[x['path'].replace('examples/llama.android/lib/','')+' '+str(x.get('size','')) for x in t if x['path'].startswith('examples/llama.android/lib/') and x['type']=='blob']
+          print('::notice title=LLAMA-LIB-TREE::'+' | '.join(p)[:3000])
+          "
+          base=https://raw.githubusercontent.com/ggml-org/llama.cpp/$tag/examples/llama.android/lib/src/main
+          for f in $(curl -sSf "https://api.github.com/repos/ggml-org/llama.cpp/git/trees/$tag?recursive=1" | python3 -c "
+          import sys,json
+          print(' '.join(x['path'].replace('examples/llama.android/lib/src/main/','') for x in json.load(sys.stdin)['tree'] if x['path'].startswith('examples/llama.android/lib/src/main/java') and x['path'].endswith('.kt')))"); do
+            n=$(basename $f)
+            echo "::notice title=LLAMA-KT $n::$(curl -sSf $base/$f | grep -v '^\s*$' | grep -v '^\s*//' | head -c 5500 | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read()))')"
           done
       - name: Gradle plugin versions
         run: |
