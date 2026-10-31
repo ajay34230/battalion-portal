@@ -25,8 +25,11 @@ class Orchestrator(private val app: VisionApp) {
         val engine = app.engines.current()
 
         // The trained model understands the request; the rule parser is only the fallback.
-        val plan = try { engine.plan(userText) } catch (_: Throwable) { null }
-        val intent = plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: IntentParser.parse(userText)
+        // Short, unambiguous commands skip the model entirely: instant answer, no battery/RAM cost.
+        val ruleIntent = IntentParser.parse(userText)
+        val fast = isFastCommand(ruleIntent)
+        val plan = if (fast) null else try { engine.plan(userText) } catch (_: Throwable) { null }
+        val intent = if (fast) ruleIntent else plan?.intent?.let { if (it is Intent.Chat) Intent.Chat(userText) else it } ?: ruleIntent
 
         val reply = if (locked && !LockPolicy.allowedWhenLocked(intent, settings)) {
             AgentReply(Say("That is turned off while the phone is locked (see Settings).", "Locked phone par yeh band hai (Settings dekhein).", "फ़ोन लॉक होने पर यह बंद है (सेटिंग्स देखें)।").`in`(lang), lang)
@@ -46,6 +49,13 @@ class Orchestrator(private val app: VisionApp) {
         }
         db.chat().insert(ChatMessage(role = "assistant", text = reply.text, lang = lang.code))
         return reply
+    }
+
+    private fun isFastCommand(i: Intent) = when (i) {
+        Intent.AskTime, Intent.AskBattery, Intent.ListTasks, Intent.ReadEmail, is Intent.ReadNotifications, is Intent.Remember, is Intent.Recall -> true
+        is Intent.OpenApp -> i.app.trim().split(Regex("\\s+")).size <= 3
+        is Intent.Call -> i.contact.trim().split(Regex("\\s+")).size <= 3
+        else -> false
     }
 
     suspend fun confirmed(c: ToolResult.NeedsConfirmation, lang: Lang): String {

@@ -23,7 +23,7 @@ jobs:
       - name: Unit tests and debug APK
         run: |
           set +e
-          gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug 2>&1 | tee build.log
+          gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug assembleRelease 2>&1 | tee build.log
           code=${PIPESTATUS[0]}
           if [ $code -ne 0 ]; then
             msg=$( (grep -E "Caused by|^e: |error:|Error:" build.log | awk "!s[\$0]++" | head -25; grep -E "^e: |What went wrong|Could not |Execution failed|FAILED|error:|bad class file|Caused by" -A4 build.log) | head -200 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
@@ -39,7 +39,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk vision-debug.apk
-          gh release create "vision-dev-${{ github.run_number }}" vision-debug.apk --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease --title "VISION dev build ${{ github.run_number }}" --notes "Debug APK from ${{ github.sha }}. Unverified on real devices; see vision/docs/KNOWN_LIMITATIONS.md."
+          cp app/build/outputs/apk/release/app-release.apk vision-release.apk
+          gh release create "vision-dev-${{ github.run_number }}" vision-release.apk vision-debug.apk --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease --title "VISION dev build ${{ github.run_number }}" --notes "Release (faster, install this one) and debug APKs from ${{ github.sha }}. Unverified on real devices; see vision/docs/KNOWN_LIMITATIONS.md."
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:

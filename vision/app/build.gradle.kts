@@ -21,9 +21,18 @@ android {
         versionName = "0.1.0"
     }
 
+    // A fixed personal-sideload key (kept in the private repo) so each new APK installs as an update without losing data.
+    signingConfigs {
+        create("personal") {
+            storeFile = rootProject.file("personal-sideload.jks")
+            storePassword = "visionpersonal"; keyAlias = "vision"; keyPassword = "visionpersonal"
+        }
+    }
     buildTypes {
+        debug { signingConfig = signingConfigs.getByName("personal") }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("personal")
         }
     }
     compileOptions {
