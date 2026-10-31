@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -57,7 +58,7 @@ fun VisionNav(app: VisionApp) {
         containerColor = Color.Transparent,
         bottomBar = {
             androidx.compose.material3.NavigationBar(containerColor = Color(0xE6070F1C), contentColor = VisionColors.Text) {
-                for (t in tabs) androidx.compose.material3.NavigationBarItem(
+                for (t in tabs) NavigationBarItem(
                     selected = tabRoute == t.route, onClick = { if (t.route == Routes.CHAT) pendingSay = null; goTab(t.route) },
                     icon = { androidx.compose.material3.Text(t.icon, fontSize = 20.sp) },
                     label = { androidx.compose.material3.Text(t.label, fontSize = 11.sp) },
