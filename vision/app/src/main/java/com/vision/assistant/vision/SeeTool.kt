@@ -29,6 +29,8 @@ private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { c ->
     addOnFailureListener { c.resumeWithException(it) }
 }
 
+private const val OCR_NOTE = "\n\n(Note: I read the text with the on-device text reader and answered from that text. I did not visually see the image; install Gemma 4 for that.)"
+
 /** On-device "seeing": ML Kit text reading (Latin + Devanagari) and object labels, a multimodal model when installed, and PDF reading. */
 class SeeTool(private val app: VisionApp) {
     private val latin by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
@@ -72,7 +74,7 @@ class SeeTool(private val app: VisionApp) {
             }
             val q = question.ifBlank { "What is in this photo?" }
             val ans = app.engines.current().summarize(q, material, lang)
-            return ans ?: buildString {
+            return if (ans != null) ans + OCR_NOTE else buildString {
                 append("I can't look at photos in detail without an image model (download Gemma 4 on the Models screen). From on-device analysis: ")
                 if (labels.isNotEmpty()) append("it looks like ${labels.joinToString(", ")}. ")
                 append(if (text.isNotBlank()) "Text I can read:\n${text.take(1200)}" else "I couldn't read any text.")
@@ -104,6 +106,6 @@ class SeeTool(private val app: VisionApp) {
         val note = if (total > maxPages) " (I read the first $maxPages of $total pages.)" else ""
         val q = question.ifBlank { "Summarise this document." }
         val ans = app.engines.current().summarize(q, "[1] PDF document\n${pages.toString().take(6500)}", lang)
-        (ans ?: ("Here is the text I could read:\n" + pages.toString().take(1500))) + note
+        (if (ans != null) ans + OCR_NOTE else "Here is the text I could read:\n" + pages.toString().take(1500)) + note
     }
 }

@@ -42,4 +42,6 @@
 | 2 Model discovery + compatibility | done, CI green: search Hugging Face litert-community, compatibility labels, strict validation, add-to-list; live search NOT TESTED on device |
 | 3 Task router | done, CI green: code / Hindi / simple routing, Speed-Balanced-Quality setting; behaviour on device NOT TESTED |
 | 4 Online/offline | done, CI green: Online/Offline chip, Offline check screen (PASSED/FAILED/BLOCKED/NOT_TESTED); not yet run in airplane mode |
-| 5 Memory embeddings + voice | in progress |
+| 5 Memory embeddings | done, CI green (vision-dev-83): optional EmbeddingGemma 270M, cached vectors, fallback to keyword; Offline check row; NOT TESTED on device. Whisper/Piper: not built (documented). |
+| 6 Vision / OCR / PDF | existing ML Kit OCR/labels/PDF kept; replies now state when answered from OCR text rather than by seeing the image; NOT TESTED on device |
+| 7 Coding agent | CodeStudio now asks the router for the code-suited model (CI pending); NOT TESTED on device |

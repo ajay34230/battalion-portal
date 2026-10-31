@@ -24,3 +24,10 @@ Planned: an Offline Verification screen that runs checks 1-3, 5, 8, 11 itself on
 
 ## Update: Offline check screen (More > Offline check)
 The app now runs checks 1-3, 4-5 (streaming), 5, 8, 11 itself and stores the results with a timestamp, marking whether the phone was offline throughout. Statuses in this table stay NOT TESTED until the owner has run it in airplane mode and the result is copied here.
+
+
+## Vision / OCR / PDF (Phase 6)
+- Text in photos and PDFs: ML Kit OCR (Latin + Devanagari), on-device. NOT TESTED on device.
+- Object labels: ML Kit image labelling, on-device. NOT TESTED.
+- Understanding the picture itself: only with Gemma 4 (multimodal) installed. Without it, answers come from OCR text and labels and the reply says so.
+- PDF: first 6 pages rendered with PdfRenderer then OCR; scanned or low-quality pages may fail.

@@ -27,7 +27,7 @@ class CodeStudio(private val app: VisionApp, private val ctx: Context) {
 
     /** Asks the installed model to write or change files. Everything it returns is validated by [ProjectStore]; a snapshot is taken first. */
     suspend fun build(name: String, request: String): String {
-        val engine = app.engines.current()
+        val engine = app.engines.current("kotlin code")
         if (!engine.isNeuralModelLoaded) return "No language model is installed, so I can't write new code from a description. Templates, editing, preview and export still work offline. Install a model in Models & downloads."
         store.snapshot(name, "Before: ${request.take(40)}")
         val existing = store.files(name).take(12).joinToString("\n") { f -> "=== $f ===\n" + (store.read(name, f)?.take(4000) ?: "") }
@@ -42,7 +42,7 @@ class CodeStudio(private val app: VisionApp, private val ctx: Context) {
     }
 
     suspend fun autoFix(name: String): FixReport {
-        val engine = app.engines.current()
+        val engine = app.engines.current("kotlin code")
         val loop = FixLoop(store, { s, p -> engine.complete(s, p) })
         return loop.run(name).also { log("Auto-fix '$name': fixed=${it.fixed} rounds=${it.rounds}") }
     }
@@ -58,7 +58,7 @@ class CodeStudio(private val app: VisionApp, private val ctx: Context) {
 
     /** Critical-logic step: the model compares two approaches (complexity, risks) and proposes tests. Plain advice — the tests still have to be run. */
     suspend fun compareApproaches(problem: String): String {
-        val engine = app.engines.current()
+        val engine = app.engines.current("kotlin code")
         if (!engine.isNeuralModelLoaded) return "No language model is installed, so I can't compare approaches. Install one in Models & downloads."
         return engine.complete("You are a careful senior engineer. Be precise and honest about uncertainty.", com.vision.assistant.research.DevResearch.comparePrompt(problem)) ?: "The model did not answer."
     }
