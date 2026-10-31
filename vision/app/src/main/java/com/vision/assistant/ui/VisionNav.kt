@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +29,7 @@ object Routes {
 fun VisionNav(app: VisionApp) {
     val nav = rememberNavController()
     val back = { nav.popBackStack(); Unit }
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
     NavHost(
         navController = nav, startDestination = Routes.HOME,
         enterTransition = { fadeIn(tween(700)) + scaleIn(tween(700), initialScale = 0.94f) },
@@ -45,5 +47,7 @@ fun VisionNav(app: VisionApp) {
         composable(Routes.SETTINGS) { SettingsScreen(app, back) }
         composable(Routes.PRIVACY) { PrivacyScreen(app, back) }
         composable(Routes.TERMUX) { TermuxScreen(app, back) }
+        }
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.TopCenter)) { DownloadBanner(onClick = { nav.navigate(Routes.MODELS) { launchSingleTop = true } }) }
     }
 }
