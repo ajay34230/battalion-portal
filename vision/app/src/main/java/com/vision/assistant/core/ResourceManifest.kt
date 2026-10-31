@@ -42,6 +42,24 @@ object ResourceManifest {
             "Apache-2.0", "multilingual (incl. Hindi)", "Needs a phone with about 8 GB RAM; large download.",
         ),
         ResourceEntry(
+            "qwen3.5-0.8b-int8", ResourceKind.LLM, "Qwen3.5 0.8B (int8) — fast, light",
+            "$HF/Qwen3.5-0.8B/resolve/main/Qwen3.5-0.8B_int8.litertlm", "Qwen3.5-0.8B_int8.litertlm",
+            "25447e2550082aed6145bbc755ec4da5d535f98f6a0c386865fdae2ccb88aed1", 964_566_992, 3_000,
+            "Apache-2.0", "multilingual (incl. Hindi)", "Newer than Qwen3 0.6B. Unverified on real phones.",
+        ),
+        ResourceEntry(
+            "qwen3.5-2b-int8", ResourceKind.LLM, "Qwen3.5 2B (int8) — balanced",
+            "$HF/Qwen3.5-2B/resolve/main/Qwen3.5-2B_int8.litertlm", "Qwen3.5-2B_int8.litertlm",
+            "fa4ac3259404567c7f82533746549eed94e2e1c8222095706c63cce17653c68a", 2_119_744_416, 5_000,
+            "Apache-2.0", "multilingual (incl. Hindi)", "Good middle choice for 6 GB phones. Unverified on real phones.",
+        ),
+        ResourceEntry(
+            "qwen3.5-4b-int4", ResourceKind.LLM, "Qwen3.5 4B (mixed int4) — strongest recommended",
+            "$HF/Qwen3.5-4B/resolve/main/Qwen3.5-4B_mixed_int4.litertlm", "Qwen3.5-4B_mixed_int4.litertlm",
+            "7243c33c9c6192150ab6da7ac13a9efdc24ff1a653eabc93b2757de4b44b012a", 2_754_070_624, 6_500,
+            "Apache-2.0", "multilingual (incl. Hindi)", "For 8 GB+ phones such as iQOO 7. Published benchmark: about 6 tokens/s on an 8 GB Pixel 8a CPU, ~4.4 GB peak memory. Text only.",
+        ),
+        ResourceEntry(
             "vosk-small-en-us", ResourceKind.STT, "Vosk small English (US) — offline speech",
             "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip", "vosk-model-small-en-us-0.15.zip",
             "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498", 41_205_931, 1_000,
